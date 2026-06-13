@@ -23,12 +23,12 @@ class FruitBoxEnv(gym.Env):
 
     metadata = {"render_modes": []}
 
-    def __init__(self, rows=10, cols=17, time_limit=120, dt_per_step=1.0):
+    def __init__(self, rows=10, cols=17, dt_per_step=1.0, grid_type="solvable"):
         super().__init__()
         self.rows = rows
         self.cols = cols
         self.dt_per_step = dt_per_step
-        self.game = FruitBoxGame(rows, cols, time_limit, grid_type="solvable")
+        self.game = FruitBoxGame(rows, cols, grid_type=grid_type)
 
         n = rows * cols
         self.action_space = spaces.Discrete(n * n)

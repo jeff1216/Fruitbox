@@ -15,7 +15,7 @@ BTN_W = 360
 BTN_H = 80
 BTN_GAP = 16
 BTN_X = (MENU_W - BTN_W) // 2
-BTN_Y_START = 230
+BTN_Y_START = 190
 
 ACCENT          = (24,  95, 165)
 CARD_BG         = (255, 255, 255)
@@ -42,9 +42,15 @@ MODES = [
         "title": "VS AI",
         "desc":  "Race against the RL model side-by-side",
     },
+    {
+        "id":    "watch_ai",
+        "title": "Watch AI",
+        "desc":  "Sit back and watch the RL model play",
+    },
 ]
 
-VS_AI_IDX = 2   # index of the vs_ai entry in MODES
+VS_AI_IDX    = 2   # index of the vs_ai entry in MODES
+WATCH_AI_IDX = 3   # index of the watch_ai entry in MODES
 
 
 class FruitBoxMenu:
@@ -60,8 +66,10 @@ class FruitBoxMenu:
         self.font_hint    = pygame.font.SysFont("Arial", 12)
         self.font_toggle  = pygame.font.SysFont("Arial", 12, bold=True)
 
-        self.vs_grid_type   = "random"      # toggled by pill button
-        self.vs_toggle_rect = pygame.Rect(0, 0, 0, 0)
+        self.vs_grid_type      = "random"
+        self.vs_toggle_rect    = pygame.Rect(0, 0, 0, 0)
+        self.watch_grid_type   = "solvable"
+        self.watch_toggle_rect = pygame.Rect(0, 0, 0, 0)
 
     # ── geometry ──────────────────────────────────────────────────────
 
@@ -84,7 +92,8 @@ class FruitBoxMenu:
         for i, mode in enumerate(MODES):
             rect    = self._btn_rect(i)
             hovered = rect.collidepoint(mouse) and not (
-                i == VS_AI_IDX and self.vs_toggle_rect.collidepoint(mouse)
+                (i == VS_AI_IDX    and self.vs_toggle_rect.collidepoint(mouse)) or
+                (i == WATCH_AI_IDX and self.watch_toggle_rect.collidepoint(mouse))
             )
 
             pygame.draw.rect(self.screen, CARD_HOVER_BG if hovered else CARD_BG, rect, border_radius=12)
@@ -102,7 +111,7 @@ class FruitBoxMenu:
             self.screen.blit(t_surf, (tx, ty))
             self.screen.blit(d_surf, (tx, ty + t_surf.get_height() + 5))
 
-            # grid-type toggle pill on the VS AI card
+            # grid-type toggle pill on VS AI and Watch AI cards
             if i == VS_AI_IDX:
                 label    = self.vs_grid_type.capitalize()
                 tgl_surf = self.font_toggle.render(label, True, TOGGLE_TEXT)
@@ -123,6 +132,26 @@ class FruitBoxMenu:
                 pygame.draw.rect(self.screen, TOGGLE_BORDER, self.vs_toggle_rect, width=1, border_radius=20)
                 self.screen.blit(tgl_surf, (tgl_x + pad_x, tgl_y + pad_y))
 
+            if i == WATCH_AI_IDX:
+                label    = self.watch_grid_type.capitalize()
+                tgl_surf = self.font_toggle.render(label, True, TOGGLE_TEXT)
+                pad_x, pad_y = 10, 5
+                tgl_w = tgl_surf.get_width()  + pad_x * 2
+                tgl_h = tgl_surf.get_height() + pad_y * 2
+                tgl_x = rect.right - tgl_w - 14
+                tgl_y = rect.y + (BTN_H - tgl_h) // 2
+                self.watch_toggle_rect = pygame.Rect(tgl_x, tgl_y, tgl_w, tgl_h)
+
+                pill_bg = TOGGLE_RANDOM if self.watch_grid_type == "random" else TOGGLE_SOLVABLE
+                tgl_hov = self.watch_toggle_rect.collidepoint(mouse)
+                if tgl_hov:
+                    r, g, b = pill_bg
+                    pill_bg = (max(r - 15, 0), max(g - 15, 0), max(b - 15, 0))
+
+                pygame.draw.rect(self.screen, pill_bg, self.watch_toggle_rect, border_radius=20)
+                pygame.draw.rect(self.screen, TOGGLE_BORDER, self.watch_toggle_rect, width=1, border_radius=20)
+                self.screen.blit(tgl_surf, (tgl_x + pad_x, tgl_y + pad_y))
+
         hint = self.font_hint.render("Press ESC during a game to return here", True, TEXT_SECONDARY)
         self.screen.blit(hint, ((MENU_W - hint.get_width()) // 2, MENU_H - 26))
 
@@ -138,9 +167,12 @@ class FruitBoxMenu:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    # toggle pill takes priority over card click
+                    # toggle pills take priority over card click
                     if self.vs_toggle_rect.collidepoint(event.pos):
                         self.vs_grid_type = "solvable" if self.vs_grid_type == "random" else "random"
+                        continue
+                    if self.watch_toggle_rect.collidepoint(event.pos):
+                        self.watch_grid_type = "solvable" if self.watch_grid_type == "random" else "random"
                         continue
                     for i, mode in enumerate(MODES):
                         if self._btn_rect(i).collidepoint(event.pos):
@@ -169,6 +201,19 @@ class FruitBoxMenu:
             ))
             pygame.display.flip()
             FruitBoxVs(opponent="rl_model", screen=screen, grid_type=self.vs_grid_type).run()
+            self.screen = pygame.display.set_mode((MENU_W, MENU_H))
+
+        elif mode == "watch_ai":
+            from fruitbox_ai_watch import FruitBoxAiWatch
+            screen = pygame.display.set_mode((GAME_W, GAME_H))
+            screen.fill(BG)
+            loading_surf = self.font_btn.render("Loading model…", True, TEXT_SECONDARY)
+            screen.blit(loading_surf, (
+                (GAME_W - loading_surf.get_width())  // 2,
+                (GAME_H - loading_surf.get_height()) // 2,
+            ))
+            pygame.display.flip()
+            FruitBoxAiWatch(screen=screen, grid_type=self.watch_grid_type).run()
             self.screen = pygame.display.set_mode((MENU_W, MENU_H))
 
     # ── main ──────────────────────────────────────────────────────────
