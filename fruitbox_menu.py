@@ -57,14 +57,14 @@ class FruitBoxMenu:
         self.screen.blit(title, ((MENU_W - title.get_width()) // 2, 100))
 
         # mode cards (side by side)
-        margin = 24
-        gap    = 24
-        card_w = (MENU_W - margin * 2 - gap) // 2
+        card_w = 280
         card_h = 80
+        card_gap = 24
         card_y = 240
+        cards_x = (MENU_W - card_w * 2 - card_gap) // 2
 
-        self.sp_btn_rect = pygame.Rect(margin,              card_y, card_w, card_h)
-        self.vs_btn_rect = pygame.Rect(margin + card_w + gap, card_y, card_w, card_h)
+        self.sp_btn_rect = pygame.Rect(cards_x,                   card_y, card_w, card_h)
+        self.vs_btn_rect = pygame.Rect(cards_x + card_w + card_gap, card_y, card_w, card_h)
 
         for rect, label in [(self.sp_btn_rect, "Single Player"), (self.vs_btn_rect, "vs AI")]:
             hovered = rect.collidepoint(mouse)
@@ -80,10 +80,10 @@ class FruitBoxMenu:
         # grid type selector
         gt_cy = card_y + card_h + 60
 
-        label_surf = self.font_label.render("Grid Type", True, TEXT_SECONDARY)
-        pill_surf  = self.font_toggle.render(self.grid_type.capitalize(), True, ACCENT)
+        label_surf = self.font_btn.render("Grid Type", True, TEXT_SECONDARY)
+        pill_surf  = self.font_btn.render(self.grid_type.capitalize(), True, ACCENT)
         pill_pad_x, pill_pad_y = 20, 8
-        pill_w = max(pill_surf.get_width() + pill_pad_x * 2, 120)
+        pill_w = max(pill_surf.get_width() + pill_pad_x * 2, 140)
         pill_h = pill_surf.get_height() + pill_pad_y * 2
 
         arr_l      = self.font_arrow.render("<", True, ARROW_COLOR)

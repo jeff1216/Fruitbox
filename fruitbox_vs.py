@@ -10,6 +10,7 @@ from sb3_contrib.common.wrappers import ActionMasker
 
 from fruitbox_game import FruitBoxGame
 from fruitbox_env import FruitBoxEnv
+import fruitbox_stats
 from fruitbox_pygame import (
     FPS, BG, CELL_BG, CELL_BORDER, CLEARED_BG,
     SEL_FILL, SEL_BORDER, VALID_FILL, VALID_BOR,
@@ -84,6 +85,7 @@ class FruitBoxVs:
         self.pause_btn_rect   = pygame.Rect(0, 0, 0, 0)
         self.menu_btn_rect    = pygame.Rect(0, 0, 0, 0)
         self.close_over_rect  = pygame.Rect(0, 0, 0, 0)
+        self.stats            = fruitbox_stats.load()
         self.reset()
 
     # ── board x offsets ───────────────────────────────────────────────
@@ -235,7 +237,7 @@ class FruitBoxVs:
         dim.fill((44, 44, 42, 160))
         self.screen.blit(dim, (0, 0))
 
-        card_w, card_h = 380, 160
+        card_w, card_h = 380, 185
         cx = (WIN_W - card_w) // 2
         cy = (WIN_H - card_h) // 2
         card = pygame.Rect(cx, cy, card_w, card_h)
@@ -245,10 +247,13 @@ class FruitBoxVs:
         over  = self.font_over.render("Game Over", True, TEXT_PRIMARY)
         rsn   = self.font_sub.render(self.over_reason, True, TEXT_SECONDARY)
         again = self.font_sub.render("Press R to play again", True, TEXT_SECONDARY)
+        w, l, t = self.stats["wins"], self.stats["losses"], self.stats["ties"]
+        rec   = self.font_label.render(f"Record: {w}W  {l}L  {t}T", True, TEXT_SECONDARY)
 
         self.screen.blit(over,  (cx + (card_w - over.get_width())  // 2, cy + 22))
         self.screen.blit(rsn,   (cx + (card_w - rsn.get_width())   // 2, cy + 74))
         self.screen.blit(again, (cx + (card_w - again.get_width()) // 2, cy + 112))
+        self.screen.blit(rec,   (cx + (card_w - rec.get_width())   // 2, cy + 154))
 
         x_surf = self.font_btn.render("X", True, TEXT_SECONDARY)
         x_pad  = 6
@@ -315,11 +320,12 @@ class FruitBoxVs:
         self.ai_sel_clear_at = 0
         self.last_ai_move    = time.time() + AI_INTERVAL
 
-        self.human_over      = False
-        self.ai_over         = False
-        self.game_over       = False
-        self.over_reason     = ""
-        self.show_game_over  = True
+        self.human_over         = False
+        self.ai_over            = False
+        self.game_over          = False
+        self.over_reason        = ""
+        self.show_game_over     = True
+        self._result_recorded   = False
 
         self._solver_moves = []
         self._solver_ready = self.opponent != "solver"  # rl_model needs no solver
@@ -405,9 +411,12 @@ class FruitBoxVs:
                     self.game_over = True
                     h, a = self.human_game.score, self.ai_game.score
                     opp  = "Solver" if self.opponent == "solver" else "RL Model"
-                    if   h > a: self.over_reason = f"You win!  {h} – {a}"
-                    elif a > h: self.over_reason = f"{opp} wins!  {h} – {a}"
-                    else:       self.over_reason = f"Tie!  {h} – {a}"
+                    if   h > a: self.over_reason = f"You win!  {h} – {a}"; result = "win"
+                    elif a > h: self.over_reason = f"{opp} wins!  {h} – {a}"; result = "loss"
+                    else:       self.over_reason = f"Tie!  {h} – {a}"; result = "tie"
+                    if not self._result_recorded:
+                        self.stats = fruitbox_stats.record(result)
+                        self._result_recorded = True
 
             self.screen.fill(BG)
             self._draw_hud()
