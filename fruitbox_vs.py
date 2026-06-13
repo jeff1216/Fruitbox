@@ -65,6 +65,7 @@ class FruitBoxVs:
         self.font_over  = pygame.font.SysFont("Arial", 38, bold=True)
         self.font_sub   = pygame.font.SysFont("Arial", 20)
         self.font_btn   = pygame.font.SysFont("Arial", 13, bold=True)
+        self.font_sym   = pygame.font.SysFont("Segoe UI Symbol", 14)
 
         self.human_game = FruitBoxGame(grid_type=grid_type)
         self.ai_game    = FruitBoxGame(grid_type=grid_type)
@@ -187,11 +188,11 @@ class FruitBoxVs:
 
         mouse = pygame.mouse.get_pos()
 
-        pause_surf = self.font_btn.render("Resume" if self.human_game.paused else "Pause", True, TEXT_PRIMARY)
+        pause_surf = self.font_sym.render("▶" if self.human_game.paused else "⏸", True, TEXT_PRIMARY)
         p_w = pause_surf.get_width() + btn_pad_x * 2
         p_h = pause_surf.get_height() + btn_pad_y * 2
         p_x = btn_x - p_w - 8
-        p_y = btn_y
+        p_y = (HUD_H - p_h) // 2
         self.pause_btn_rect = pygame.Rect(p_x, p_y, p_w, p_h)
         p_hovered = self.pause_btn_rect.collidepoint(mouse)
         pygame.draw.rect(self.screen, BTN_HOVER_COLOR if p_hovered else BTN_COLOR, self.pause_btn_rect, border_radius=5)
@@ -202,7 +203,7 @@ class FruitBoxVs:
         m_w = menu_surf.get_width() + btn_pad_x * 2
         m_h = menu_surf.get_height() + btn_pad_y * 2
         m_x = p_x - m_w - 8
-        m_y = btn_y
+        m_y = (HUD_H - m_h) // 2
         self.menu_btn_rect = pygame.Rect(m_x, m_y, m_w, m_h)
         m_hovered = self.menu_btn_rect.collidepoint(mouse)
         pygame.draw.rect(self.screen, BTN_HOVER_COLOR if m_hovered else BTN_COLOR, self.menu_btn_rect, border_radius=5)

@@ -149,7 +149,8 @@ class FruitBoxPygame:
         btn_pad_x, btn_pad_y = 10, 5
         mouse = pygame.mouse.get_pos()
 
-        pause_surf = font_btn.render("Resume" if self.game.paused else "Pause", True, TEXT_PRIMARY)
+        font_sym   = pygame.font.SysFont("Segoe UI Symbol", 14)
+        pause_surf = font_sym.render("▶" if self.game.paused else "⏸", True, TEXT_PRIMARY)
         p_w = pause_surf.get_width() + btn_pad_x * 2
         p_h = pause_surf.get_height() + btn_pad_y * 2
         p_x = PADDING + 90
@@ -164,7 +165,7 @@ class FruitBoxPygame:
         m_w = menu_surf.get_width() + btn_pad_x * 2
         m_h = menu_surf.get_height() + btn_pad_y * 2
         m_x = p_x + p_w + 8
-        m_y = p_y
+        m_y = (HUD_H - m_h) // 2
         self.menu_btn_rect = pygame.Rect(m_x, m_y, m_w, m_h)
         m_hov = self.menu_btn_rect.collidepoint(mouse)
         pygame.draw.rect(self.screen, BTN_HOVER_COLOR if m_hov else BTN_COLOR, self.menu_btn_rect, border_radius=5)
