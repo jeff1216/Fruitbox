@@ -1,0 +1,304 @@
+import pygame
+import sys
+from fruitbox_game import FruitBoxGame
+
+# ── layout constants ──────────────────────────────────────────────
+CELL = 52
+PADDING = 16
+HUD_H = 72
+COLS = 17
+ROWS = 10
+
+WIN_W = COLS * CELL + PADDING * 2
+WIN_H = ROWS * CELL + PADDING * 2 + HUD_H
+
+FPS = 60
+
+# ── palette ───────────────────────────────────────────────────────
+BG          = (245, 243, 238)
+CELL_BG     = (255, 255, 255)
+CELL_BORDER = (210, 208, 200)
+CLEARED_BG  = (230, 228, 222)
+
+SEL_FILL    = (55, 138, 221, 60)   # blue tint (with alpha)
+SEL_BORDER  = (24,  95, 165)
+INVALID_FILL= (226,  75,  74, 60)
+INVALID_BOR = (163,  45,  45)
+VALID_FILL  = (29, 158, 117, 60)
+VALID_BOR   = (15, 110,  86)
+
+TEXT_PRIMARY   = (44,  44,  42)
+TEXT_SECONDARY = (95,  94,  90)
+TEXT_CLEARED   = (180, 178, 170)
+
+TIMER_OK      = (15, 110,  86)
+TIMER_WARN    = (186, 117,  23)
+TIMER_DANGER  = (163,  45,  45)
+
+BTN_COLOR        = (210, 208, 200)
+BTN_HOVER_COLOR  = (190, 188, 180)
+BTN_BORDER_COLOR = (160, 158, 150)
+
+
+def draw_rounded_rect(surf, color, rect, radius=8):
+    pygame.draw.rect(surf, color, rect, border_radius=radius)
+
+
+def draw_rounded_rect_border(surf, color, rect, width=1, radius=8):
+    pygame.draw.rect(surf, color, rect, width=width, border_radius=radius)
+
+
+class FruitBoxPygame:
+    def __init__(self, game=None, screen=None):
+        if screen is None:
+            pygame.init()
+            self.screen = pygame.display.set_mode((WIN_W, WIN_H))
+        else:
+            self.screen = screen
+        pygame.display.set_caption("Fruit Box")
+        self.clock = pygame.time.Clock()
+
+        self.font_num   = pygame.font.SysFont("Arial", 22, bold=True)
+        self.font_score = pygame.font.SysFont("Arial", 20, bold=True)
+        self.font_label = pygame.font.SysFont("Arial", 13)
+        self.font_over  = pygame.font.SysFont("Arial", 36, bold=True)
+        self.font_over_sub = pygame.font.SysFont("Arial", 18)
+
+        self.game = game if game is not None else FruitBoxGame()
+        if game is None:
+            self.game.reset()
+
+        # selection state
+        self.drag_start = None   # (row, col) where mouse went down
+        self.drag_end   = None   # (row, col) currently hovering
+        self.sel_valid  = False
+
+        self.game_over  = False
+        self.over_reason = ""
+        self.pause_btn_rect = pygame.Rect(0, 0, 0, 0)
+        self.menu_btn_rect  = pygame.Rect(0, 0, 0, 0)
+
+        # overlay surface for translucent selection
+        self.overlay = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
+
+    def cell_rect(self, row, col):
+        x = PADDING + col * CELL
+        y = HUD_H + PADDING + row * CELL
+        return pygame.Rect(x, y, CELL - 1, CELL - 1)
+
+    def pixel_to_cell(self, px, py):
+        col = (px - PADDING) // CELL
+        row = (py - HUD_H - PADDING) // CELL
+        if 0 <= row < ROWS and 0 <= col < COLS:
+            return row, col
+        return None
+
+    def selection_bounds(self):
+        if self.drag_start is None or self.drag_end is None:
+            return None
+        r1 = min(self.drag_start[0], self.drag_end[0])
+        c1 = min(self.drag_start[1], self.drag_end[1])
+        r2 = max(self.drag_start[0], self.drag_end[0])
+        c2 = max(self.drag_start[1], self.drag_end[1])
+        return r1, c1, r2, c2
+
+    def draw_hud(self):
+        # background strip
+        pygame.draw.rect(self.screen, (235, 233, 226), (0, 0, WIN_W, HUD_H))
+        pygame.draw.line(self.screen, CELL_BORDER, (0, HUD_H), (WIN_W, HUD_H), 1)
+
+        # score
+        score_label = self.font_label.render("SCORE", True, TEXT_SECONDARY)
+        score_val   = self.font_score.render(str(self.game.score), True, TEXT_PRIMARY)
+        self.screen.blit(score_label, (PADDING, 12))
+        self.screen.blit(score_val,   (PADDING, 28))
+
+        # timer
+        t = self.game.time_remaining
+        if t > 30:
+            tcol = TIMER_OK
+        elif t > 10:
+            tcol = TIMER_WARN
+        else:
+            tcol = TIMER_DANGER
+
+        timer_label = self.font_label.render("TIME", True, TEXT_SECONDARY)
+        timer_val   = self.font_score.render(f"{int(t):d}s", True, tcol)
+
+        # timer bar
+        bar_w = 180
+        bar_x = WIN_W - PADDING - bar_w
+        bar_y = 48
+        bar_h = 6
+        fill_w = int(bar_w * (t / self.game.time_limit))
+        pygame.draw.rect(self.screen, CELL_BORDER,  (bar_x, bar_y, bar_w, bar_h), border_radius=3)
+        pygame.draw.rect(self.screen, tcol, (bar_x, bar_y, fill_w, bar_h), border_radius=3)
+
+        self.screen.blit(timer_label, (WIN_W - PADDING - bar_w, 12))
+        self.screen.blit(timer_val,   (WIN_W - PADDING - bar_w, 28))
+
+        # hint
+        hint = self.font_label.render("click and drag to select a rectangle summing to 10  ·  R to restart", True, TEXT_SECONDARY)
+        hw = hint.get_width()
+        self.screen.blit(hint, ((WIN_W - hw) // 2, (HUD_H - hint.get_height()) // 2 + 4))
+
+        # hud buttons
+        font_btn = pygame.font.SysFont("Arial", 13, bold=True)
+        btn_pad_x, btn_pad_y = 10, 5
+        mouse = pygame.mouse.get_pos()
+
+        pause_surf = font_btn.render("Resume" if self.game.paused else "Pause", True, TEXT_PRIMARY)
+        p_w = pause_surf.get_width() + btn_pad_x * 2
+        p_h = pause_surf.get_height() + btn_pad_y * 2
+        p_x = PADDING + 90
+        p_y = (HUD_H - p_h) // 2
+        self.pause_btn_rect = pygame.Rect(p_x, p_y, p_w, p_h)
+        p_hov = self.pause_btn_rect.collidepoint(mouse)
+        pygame.draw.rect(self.screen, BTN_HOVER_COLOR if p_hov else BTN_COLOR, self.pause_btn_rect, border_radius=5)
+        pygame.draw.rect(self.screen, BTN_BORDER_COLOR, self.pause_btn_rect, width=1, border_radius=5)
+        self.screen.blit(pause_surf, (p_x + btn_pad_x, p_y + btn_pad_y))
+
+        menu_surf = font_btn.render("Menu", True, TEXT_PRIMARY)
+        m_w = menu_surf.get_width() + btn_pad_x * 2
+        m_h = menu_surf.get_height() + btn_pad_y * 2
+        m_x = p_x + p_w + 8
+        m_y = p_y
+        self.menu_btn_rect = pygame.Rect(m_x, m_y, m_w, m_h)
+        m_hov = self.menu_btn_rect.collidepoint(mouse)
+        pygame.draw.rect(self.screen, BTN_HOVER_COLOR if m_hov else BTN_COLOR, self.menu_btn_rect, border_radius=5)
+        pygame.draw.rect(self.screen, BTN_BORDER_COLOR, self.menu_btn_rect, width=1, border_radius=5)
+        self.screen.blit(menu_surf, (m_x + btn_pad_x, m_y + btn_pad_y))
+
+    def draw_grid(self):
+        bounds = self.selection_bounds()
+
+        for row in range(ROWS):
+            for col in range(COLS):
+                rect = self.cell_rect(row, col)
+                val  = self.game.grid[row][col]
+                cleared = (val == -1)
+
+                bg = CLEARED_BG if cleared else CELL_BG
+                draw_rounded_rect(self.screen, bg, rect, radius=6)
+                draw_rounded_rect_border(self.screen, CELL_BORDER, rect, width=1, radius=6)
+
+                if not cleared:
+                    num_surf = self.font_num.render(str(val), True, TEXT_PRIMARY)
+                    nx = rect.x + (CELL - 1 - num_surf.get_width()) // 2
+                    ny = rect.y + (CELL - 1 - num_surf.get_height()) // 2
+                    self.screen.blit(num_surf, (nx, ny))
+
+        # draw selection overlay
+        if bounds:
+            r1, c1, r2, c2 = bounds
+            self.sel_valid = self.game.validate_move(r1, c1, r2, c2)
+
+            tl = self.cell_rect(r1, c1)
+            br = self.cell_rect(r2, c2)
+            sel_rect = pygame.Rect(tl.x, tl.y, br.right - tl.x, br.bottom - tl.y)
+
+            fill_col  = VALID_FILL   if self.sel_valid else SEL_FILL
+            bord_col  = VALID_BOR    if self.sel_valid else SEL_BORDER
+
+            self.overlay.fill((0, 0, 0, 0))
+            pygame.draw.rect(self.overlay, fill_col, sel_rect, border_radius=8)
+            self.screen.blit(self.overlay, (0, 0))
+            pygame.draw.rect(self.screen, bord_col, sel_rect, width=2, border_radius=8)
+
+    def draw_game_over(self):
+        # dim overlay
+        dim = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
+        dim.fill((44, 44, 42, 160))
+        self.screen.blit(dim, (0, 0))
+
+        card_w, card_h = 340, 180
+        card_x = (WIN_W - card_w) // 2
+        card_y = (WIN_H - card_h) // 2
+        card = pygame.Rect(card_x, card_y, card_w, card_h)
+
+        draw_rounded_rect(self.screen, (255, 255, 255), card, radius=14)
+        draw_rounded_rect_border(self.screen, CELL_BORDER, card, width=1, radius=14)
+
+        over_surf = self.font_over.render("Game over", True, TEXT_PRIMARY)
+        self.screen.blit(over_surf, (card_x + (card_w - over_surf.get_width()) // 2, card_y + 28))
+
+        reason_surf = self.font_over_sub.render(self.over_reason, True, TEXT_SECONDARY)
+        self.screen.blit(reason_surf, (card_x + (card_w - reason_surf.get_width()) // 2, card_y + 78))
+
+        score_surf = self.font_score.render(f"Final score: {self.game.score}", True, TEXT_PRIMARY)
+        self.screen.blit(score_surf, (card_x + (card_w - score_surf.get_width()) // 2, card_y + 110))
+
+        restart_surf = self.font_over_sub.render("Press R to play again", True, TEXT_SECONDARY)
+        self.screen.blit(restart_surf, (card_x + (card_w - restart_surf.get_width()) // 2, card_y + 146))
+
+    def restart(self):
+        self.game.reset()
+        self.drag_start = None
+        self.drag_end   = None
+        self.sel_valid  = False
+        self.game_over  = False
+        self.over_reason = ""
+
+    def run(self):
+        while True:
+            dt = self.clock.tick(FPS) / 1000.0
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        return
+                    if event.key == pygame.K_r:
+                        self.restart()
+
+                if not self.game_over:
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        if self.menu_btn_rect.collidepoint(event.pos):
+                            return
+                        if self.pause_btn_rect.collidepoint(event.pos):
+                            self.game.toggle_pause()
+                            continue
+                        cell = self.pixel_to_cell(*event.pos)
+                        if cell:
+                            self.drag_start = cell
+                            self.drag_end   = cell
+
+                    if event.type == pygame.MOUSEMOTION:
+                        if self.drag_start:
+                            cell = self.pixel_to_cell(*event.pos)
+                            if cell:
+                                self.drag_end = cell
+
+                    if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                        bounds = self.selection_bounds()
+                        if bounds:
+                            r1, c1, r2, c2 = bounds
+                            points, no_moves = self.game.apply_move(r1, c1, r2, c2)
+                            if no_moves:
+                                self.game_over  = True
+                                self.over_reason = "No more valid moves"
+                        self.drag_start = None
+                        self.drag_end   = None
+
+            # tick timer
+            if not self.game_over:
+                timed_out = self.game.tick(dt)
+                if timed_out:
+                    self.game_over  = True
+                    self.over_reason = "Time's up!"
+
+            # draw
+            self.screen.fill(BG)
+            self.draw_hud()
+            self.draw_grid()
+            if self.game_over:
+                self.draw_game_over()
+
+            pygame.display.flip()
+
+
+if __name__ == "__main__":
+    FruitBoxPygame().run()

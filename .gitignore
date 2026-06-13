@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Training artifacts
+checkpoints/
+logs/
+fruitbox_ppo_final.zip
+fruitbox_ppo_final/
+
+# Watch callback temp models
+fruitbox_watch_*.zip
+
+# OS
+.DS_Store
+Thumbs.db
