@@ -51,9 +51,10 @@ class FruitBoxAiWatch:
         self.game   = self.ai_env.env.game
         self.model  = MaskablePPO.load(MODEL_PATH)
 
-        self.overlay         = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
-        self.menu_btn_rect   = pygame.Rect(0, 0, 0, 0)
-        self.close_over_rect = pygame.Rect(0, 0, 0, 0)
+        self.overlay          = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
+        self.menu_btn_rect    = pygame.Rect(0, 0, 0, 0)
+        self.restart_btn_rect = pygame.Rect(0, 0, 0, 0)
+        self.close_over_rect  = pygame.Rect(0, 0, 0, 0)
         self.reset()
 
     def reset(self):
@@ -104,6 +105,17 @@ class FruitBoxAiWatch:
         pygame.draw.rect(self.screen, BTN_HOVER_COLOR if m_hov else BTN_COLOR, self.menu_btn_rect, border_radius=5)
         pygame.draw.rect(self.screen, BTN_BORDER_COLOR, self.menu_btn_rect, width=1, border_radius=5)
         self.screen.blit(m_surf, (m_x + btn_pad_x, m_y + btn_pad_y))
+
+        r_surf = self.font_btn.render("Restart", True, TEXT_PRIMARY)
+        r_w    = r_surf.get_width()  + btn_pad_x * 2
+        r_h    = r_surf.get_height() + btn_pad_y * 2
+        r_x    = m_x + m_w + 8
+        r_y    = (HUD_H - r_h) // 2
+        self.restart_btn_rect = pygame.Rect(r_x, r_y, r_w, r_h)
+        r_hov  = self.restart_btn_rect.collidepoint(mouse)
+        pygame.draw.rect(self.screen, BTN_HOVER_COLOR if r_hov else BTN_COLOR, self.restart_btn_rect, border_radius=5)
+        pygame.draw.rect(self.screen, BTN_BORDER_COLOR, self.restart_btn_rect, width=1, border_radius=5)
+        self.screen.blit(r_surf, (r_x + btn_pad_x, r_y + btn_pad_y))
 
     def _draw_board(self):
         for row in range(ROWS):
@@ -196,6 +208,9 @@ class FruitBoxAiWatch:
                         continue
                     if self.menu_btn_rect.collidepoint(event.pos):
                         return
+                    if self.restart_btn_rect.collidepoint(event.pos):
+                        self.reset()
+                        continue
 
             if not self.game_over:
                 timed_out = self.game.tick(dt)

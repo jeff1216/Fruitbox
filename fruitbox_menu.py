@@ -39,8 +39,9 @@ class FruitBoxMenu:
         self.vs_btn_rect      = pygame.Rect(0, 0, 0, 0)
         self.left_arrow_rect  = pygame.Rect(0, 0, 0, 0)
         self.right_arrow_rect = pygame.Rect(0, 0, 0, 0)
-        self.settings         = SettingsOverlay()
+        self.settings          = SettingsOverlay()
         self.settings_btn_rect = pygame.Rect(0, 0, 0, 0)
+        self.watch_btn_rect    = pygame.Rect(MENU_W - 60, MENU_H - 30, 60, 30)
 
     @property
     def grid_type(self):
@@ -173,6 +174,8 @@ class FruitBoxMenu:
                         return "single_player"
                     if self.vs_btn_rect.collidepoint(event.pos):
                         return "vs_ai"
+                    if self.watch_btn_rect.collidepoint(event.pos):
+                        return "watch_ai"
             self._draw()
 
     # ── launchers ─────────────────────────────────────────────────────
@@ -204,6 +207,26 @@ class FruitBoxMenu:
             ))
             pygame.display.flip()
             FruitBoxVs(opponent="rl_model", screen=screen, grid_type=self.grid_type).run()
+            self.screen = pygame.display.set_mode((MENU_W, MENU_H))
+
+        elif mode == "watch_ai":
+            loading_surf = self.font_btn.render("Loading model…", True, TEXT_SECONDARY)
+            self.screen.fill(BG)
+            self.screen.blit(loading_surf, (
+                (MENU_W - loading_surf.get_width())  // 2,
+                (MENU_H - loading_surf.get_height()) // 2,
+            ))
+            pygame.display.flip()
+
+            from fruitbox_ai_watch import FruitBoxAiWatch
+            screen = pygame.display.set_mode((GAME_W, GAME_H))
+            screen.fill(BG)
+            screen.blit(loading_surf, (
+                (GAME_W - loading_surf.get_width())  // 2,
+                (GAME_H - loading_surf.get_height()) // 2,
+            ))
+            pygame.display.flip()
+            FruitBoxAiWatch(screen=screen, grid_type=self.grid_type).run()
             self.screen = pygame.display.set_mode((MENU_W, MENU_H))
 
     # ── main ──────────────────────────────────────────────────────────
