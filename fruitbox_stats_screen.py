@@ -106,7 +106,7 @@ class StatsOverlay:
         self._view         = "history"
         self._scroll       = 0
         self._selected_row = None
-        self._history      = fruitbox_stats.get_history()
+        self._history      = fruitbox_stats.get_history()[:20]
         self._dropdown.hide()
 
     def handle_event(self, event):
