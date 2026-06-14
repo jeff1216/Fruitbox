@@ -107,7 +107,7 @@ class FruitBoxVs:
         # Pause
         self.pause_btn = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(rx - 34, _BTN_Y, 34, _BTN_H),
-            text="⏸",
+            text="||",
             manager=self.ui,
         )
         rx -= 34 + 8
@@ -212,7 +212,7 @@ class FruitBoxVs:
         self.screen.blit(timer_surf, (tx, 28))
 
         # Update dynamic button labels
-        new_pause_text  = "▶" if self.human_game.paused else "⏸"
+        new_pause_text  = ">" if self.human_game.paused else "||"
         new_toggle_text = "Hide" if self.ai_board_visible else "Show"
         if self.pause_btn.text  != new_pause_text:
             self.pause_btn.set_text(new_pause_text)

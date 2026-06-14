@@ -102,7 +102,7 @@ class FruitBoxPygame:
         bx = _BTN_X0
         self.pause_btn = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(bx, _BTN_Y, _PAUSE_W, _BTN_H),
-            text="⏸",
+            text="||",
             manager=self.ui,
         )
         bx += _PAUSE_W + 8
@@ -164,7 +164,7 @@ class FruitBoxPygame:
         self.screen.blit(self.font_label.render("TIME", True, TEXT_SECONDARY), (bar_x, 12))
         self.screen.blit(self.font_score.render(f"{int(t):d}s", True, tcol),   (bar_x, 28))
 
-        new_pause_text = "▶" if self.game.paused else "⏸"
+        new_pause_text = ">" if self.game.paused else "||"
         if self.pause_btn.text != new_pause_text:
             self.pause_btn.set_text(new_pause_text)
 
