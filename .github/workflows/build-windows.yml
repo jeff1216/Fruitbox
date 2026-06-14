@@ -18,23 +18,30 @@ jobs:
   build:
     runs-on: windows-latest
 
+    env:
+      PIP_CACHE_DIR: ${{ github.workspace }}/.pip-cache
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Restore pip cache
+        uses: actions/cache@v4
+        with:
+          path: .pip-cache
+          key: pip-win-py313-cpu-${{ hashFiles('requirements.txt', 'requirements-build.txt') }}
+          restore-keys: |
+            pip-win-py313-cpu-
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-build.txt
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-build.txt --extra-index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements-build.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
       - name: Resolve model revision
         id: model
