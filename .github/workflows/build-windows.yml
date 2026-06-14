@@ -1,0 +1,51 @@
+name: Build Windows executable
+
+on:
+  push:
+    branches: [master, main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  HF_MODEL_REPO: Fungster/fruitbox-ppo
+  HF_MODEL_REVISION: main
+  HF_MODEL_FILE: fruitbox_ppo_final.zip
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pygame numpy gymnasium stable-baselines3 sb3-contrib torch --extra-index-url https://download.pytorch.org/whl/cpu
+
+      - name: Download trained model
+        shell: pwsh
+        run: |
+          $url = "https://huggingface.co/$env:HF_MODEL_REPO/resolve/$env:HF_MODEL_REVISION/$env:HF_MODEL_FILE"
+          Write-Host "Downloading $env:HF_MODEL_FILE from $env:HF_MODEL_REPO@$env:HF_MODEL_REVISION"
+          Invoke-WebRequest -Uri $url -OutFile $env:HF_MODEL_FILE
+
+      - name: Build executable
+        run: |
+          python -m PyInstaller --onefile --windowed --name FruitBox `
+            --add-data "fruitbox_ppo_final.zip;." `
+            --collect-data stable_baselines3 `
+            --collect-data sb3_contrib `
+            --add-binary "C:\Windows\System32\VCRUNTIME140.dll;." `
+            --add-binary "C:\Windows\System32\VCRUNTIME140_1.dll;." `
+            fruitbox_menu.py
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: FruitBox-windows
+          path: dist/FruitBox.exe
