@@ -27,12 +27,42 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-build.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
-      - name: Download trained model
-        shell: pwsh
+      - name: Resolve model revision
+        id: model
+        shell: python
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          $url = "https://huggingface.co/$env:HF_MODEL_REPO/resolve/$env:HF_MODEL_REVISION/$env:HF_MODEL_FILE"
-          Write-Host "Downloading $env:HF_MODEL_FILE from $env:HF_MODEL_REPO@$env:HF_MODEL_REVISION"
-          Invoke-WebRequest -Uri $url -OutFile $env:HF_MODEL_FILE
+          import os
+          from huggingface_hub import HfApi
+
+          revision = os.environ["HF_MODEL_REVISION"]
+          try:
+              api = HfApi(token=os.environ.get("HF_TOKEN") or None)
+              info = api.repo_info(
+                  os.environ["HF_MODEL_REPO"],
+                  revision=revision,
+              )
+              sha = info.sha
+          except Exception as exc:
+              print(f"Could not resolve Hugging Face revision ({exc}); using {revision!r} for cache key")
+              sha = revision
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"sha={sha}\n")
+
+      - uses: actions/cache@v4
+        id: model-cache
+        with:
+          path: fruitbox_ppo_final.zip
+          key: hf-model-${{ env.HF_MODEL_REPO }}-${{ steps.model.outputs.sha }}
+
+      - name: Download trained model
+        if: steps.model-cache.outputs.cache-hit != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          FRUITBOX_MODEL_MIRROR_URL: ${{ secrets.FRUITBOX_MODEL_MIRROR_URL }}
+        run: python .github/scripts/download_hf_model.py
 
       - name: Build executable
         run: |
