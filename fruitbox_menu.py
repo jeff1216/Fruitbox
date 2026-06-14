@@ -163,6 +163,13 @@ class FruitBoxMenu:
         hint = self.font_hint.render("Press ESC during a game to return here", True, TEXT_SECONDARY)
         self.screen.blit(hint, ((MENU_W - hint.get_width()) // 2, MENU_H - 26))
 
+        overlay_open = self.settings.visible or self.stats_overlay.visible
+        for btn in (self.sp_btn, self.vs_btn, self.settings_btn, self.stats_btn):
+            if overlay_open and btn.is_enabled:
+                btn.disable()
+            elif not overlay_open and not btn.is_enabled:
+                btn.enable()
+
         self.ui.update(dt)
         self.ui.draw_ui(self.screen)
 
