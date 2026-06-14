@@ -6,6 +6,9 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   HF_MODEL_REPO: Fungster/fruitbox-ppo
   HF_MODEL_REVISION: main
@@ -74,8 +77,30 @@ jobs:
             --add-binary "C:\Windows\System32\VCRUNTIME140_1.dll;." `
             fruitbox_menu.py
 
-      - name: Upload executable
+      - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: FruitBox-windows
           path: dist/FruitBox.exe
+
+      - name: Publish rolling pre-release
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: Latest Windows build
+          body: |
+            Automated Windows build from `${{ github.ref_name }}` @ [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}).
+          artifacts: dist/FruitBox.exe
+          artifactContentType: application/octet-stream
+          allowUpdates: true
+          replacesArtifacts: true
+          makeLatest: true
+          prerelease: true
+
+      - name: Publish version release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/FruitBox.exe
+          generate_release_notes: true
