@@ -41,6 +41,7 @@ class _CustomOverlay:
         self._card_rect     = pygame.Rect(0, 0, 0, 0)
         self.close_rect     = pygame.Rect(0, 0, 0, 0)
         self._reset_rect    = pygame.Rect(0, 0, 0, 0)
+        self._confirm_rect  = pygame.Rect(0, 0, 0, 0)
         self._font_title    = None
         self._font_label    = None
         self._font_btn      = None
@@ -89,11 +90,11 @@ class _CustomOverlay:
         self._rows_entry.set_text(str(self._rows))
 
         y += row_gap
-        self._seed_entry = pygame_gui.elements.UITextEntryLine(
-            relative_rect=pygame.Rect(right_x - 200, y - 6, 200, field_h),
+        self._time_entry = pygame_gui.elements.UITextEntryLine(
+            relative_rect=pygame.Rect(right_x - 100, y - 6, 100, field_h),
             manager=self.ui,
         )
-        self._seed_entry.set_text("" if self._seed < 0 else str(self._seed))
+        self._time_entry.set_text(str(self._time_limit))
 
         y += row_gap
         self._grid_dd = pygame_gui.elements.UIDropDownMenu(
@@ -104,11 +105,11 @@ class _CustomOverlay:
         )
 
         y += row_gap
-        self._time_entry = pygame_gui.elements.UITextEntryLine(
-            relative_rect=pygame.Rect(right_x - 100, y - 6, 100, field_h),
+        self._seed_entry = pygame_gui.elements.UITextEntryLine(
+            relative_rect=pygame.Rect(right_x - 200, y - 6, 200, field_h),
             manager=self.ui,
         )
-        self._time_entry.set_text(str(self._time_limit))
+        self._seed_entry.set_text("" if self._seed < 0 else str(self._seed))
 
     def reload_theme(self):
         self._save_values()
@@ -151,6 +152,8 @@ class _CustomOverlay:
 
     def toggle(self):
         self.visible = not self.visible
+        if self.visible:
+            self._build_ui()
 
     def handle_event(self, event) -> bool:
         if not self.visible:
@@ -160,13 +163,12 @@ class _CustomOverlay:
         if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
             if event.ui_element == self._grid_dd:
                 self._grid_type_str = event.text
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            self._save_values()
-            self.visible = False
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self._reset_rect.collidepoint(event.pos):
+            if self.close_rect.collidepoint(event.pos):
+                self.visible = False
+            elif self._reset_rect.collidepoint(event.pos):
                 self._reset()
-            elif not self._card_rect.collidepoint(event.pos) or self.close_rect.collidepoint(event.pos):
+            elif self._confirm_rect.collidepoint(event.pos):
                 self._save_values()
                 self.visible = False
         return True
@@ -210,7 +212,7 @@ class _CustomOverlay:
         row_gap = 48
         pygame.draw.line(screen, C["DIVIDER"], (cx + pad, y - 22), (cx + card_w - pad, y - 22))
 
-        for i, lbl in enumerate(["GRID SIZE", "SEED", "GRID TYPE", "TIME (SEC)"]):
+        for i, lbl in enumerate(["GRID SIZE", "TIME (SEC)", "GRID TYPE", "SEED"]):
             s = self._font_label.render(lbl, True, C["TEXT_SECONDARY"])
             screen.blit(s, (cx + pad, y + i * row_gap))
 
@@ -223,17 +225,32 @@ class _CustomOverlay:
                 cr.centery - xm.get_height() // 2,
             ))
 
+        btn_py = 6
+        btn_gap = 12
+        btn_area_w = card_w - pad * 2
+        btn_w = (btn_area_w - btn_gap) // 2
+        btn_y = cy + card_h - 16
+
         rst_surf = self._font_btn.render("Reset to Defaults", True, C["TEXT_PRIMARY"])
-        rst_px, rst_py = 14, 6
-        rst_w = rst_surf.get_width()  + rst_px * 2
-        rst_h = rst_surf.get_height() + rst_py * 2
-        rst_x = cx + (card_w - rst_w) // 2
-        rst_y = cy + card_h - rst_h - 16
-        self._reset_rect = pygame.Rect(rst_x, rst_y, rst_w, rst_h)
+        rst_h    = rst_surf.get_height() + btn_py * 2
+        rst_x    = cx + pad
+        rst_y    = btn_y - rst_h
+        self._reset_rect = pygame.Rect(rst_x, rst_y, btn_w, rst_h)
         hov_rst = self._reset_rect.collidepoint(mouse)
         pygame.draw.rect(screen, C["BTN_HOV"] if hov_rst else C["BTN"], self._reset_rect, border_radius=6)
         pygame.draw.rect(screen, C["BTN_BORDER"], self._reset_rect, width=1, border_radius=6)
-        screen.blit(rst_surf, (rst_x + rst_px, rst_y + rst_py))
+        screen.blit(rst_surf, (rst_x + (btn_w - rst_surf.get_width()) // 2, rst_y + btn_py))
+
+        cfm_surf = self._font_btn.render("Confirm", True, C["BG"])
+        cfm_h    = cfm_surf.get_height() + btn_py * 2
+        cfm_x    = cx + pad + btn_w + btn_gap
+        cfm_y    = btn_y - cfm_h
+        self._confirm_rect = pygame.Rect(cfm_x, cfm_y, btn_w, cfm_h)
+        hov_cfm = self._confirm_rect.collidepoint(mouse)
+        _a = C["ACCENT"]
+        _cfm_bg = tuple(min(255, v + 20) for v in _a) if hov_cfm else _a
+        pygame.draw.rect(screen, _cfm_bg, self._confirm_rect, border_radius=6)
+        screen.blit(cfm_surf, (cfm_x + (btn_w - cfm_surf.get_width()) // 2, cfm_y + btn_py))
 
         if self.ui:
             self.ui.update(dt)
