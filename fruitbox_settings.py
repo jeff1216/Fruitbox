@@ -29,7 +29,7 @@ class SettingsOverlay:
 
     def _ensure_fonts(self):
         if self._font_title is None:
-            self._font_title = pygame.font.SysFont("Arial", 26, bold=True)
+            self._font_title = pygame.font.SysFont("Arial", 28, bold=True)
             self._font_label = pygame.font.SysFont("Arial", 13)
             self._font_value = pygame.font.SysFont("Arial", 13, bold=True)
             self._font_btn   = pygame.font.SysFont("Arial", 13, bold=True)
@@ -101,7 +101,7 @@ class SettingsOverlay:
         pad = 32
         y   = cy + 72
         self._key_rects = {}
-        pygame.draw.line(screen, _DIVIDER, (cx + pad, y - 20), (cx + card_w - pad, y - 20))
+        pygame.draw.line(screen, _DIVIDER, (cx + pad, y - 15), (cx + card_w - pad, y - 15))
 
         for cfg_key, label in _BINDINGS:
             label_surf = self._font_label.render(label.upper(), True, _TEXT_SECONDARY)

@@ -6,6 +6,7 @@ import pygame_gui
 from fruitbox_game import FruitBoxGame
 from fruitbox_settings import SettingsOverlay
 from fruitbox_stats_screen import StatsOverlay
+from fruitbox_help import HelpOverlay
 from fruitbox_pygame import (
     FruitBoxPygame,
     WIN_W as GAME_W, WIN_H as GAME_H,
@@ -52,6 +53,7 @@ class FruitBoxMenu:
 
         self.settings       = SettingsOverlay()
         self.stats_overlay  = StatsOverlay()
+        self.help_overlay   = HelpOverlay()
 
         # ── pygame_gui ────────────────────────────────────────────
         self.ui = pygame_gui.UIManager((MENU_W, MENU_H), _THEME)
@@ -73,15 +75,18 @@ class FruitBoxMenu:
             object_id="#card_btn",
         )
 
-        # Top-right icon buttons (Settings + Stats), both square
-        s_h  = 32
-        s_x  = MENU_W - s_h - 14
-        st_x = s_x - s_h - 8
+        # Top-right icon buttons (Settings, Stats, Help), all square
+        s_h   = 32
+        s_x   = MENU_W - s_h - 14
+        st_x  = s_x  - s_h - 8
+        hlp_x = st_x - s_h - 8
 
         _raw = pygame.image.load(os.path.join(_ASSETS, "gearshape.png")).convert_alpha()
         self._icon_settings = pygame.transform.smoothscale(_raw, (s_h - 6, s_h - 6))
         _raw = pygame.image.load(os.path.join(_ASSETS, "waveform.path.ecg.png")).convert_alpha()
         self._icon_stats    = pygame.transform.smoothscale(_raw, (s_h - 6, s_h - 6))
+        _raw = pygame.image.load(os.path.join(_ASSETS, "questionmark.circle.png")).convert_alpha()
+        self._icon_help     = pygame.transform.smoothscale(_raw, (s_h - 6, s_h - 6))
 
         self.settings_btn = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(s_x, _TOP_BTN_Y, s_h, s_h),
@@ -91,6 +96,12 @@ class FruitBoxMenu:
         )
         self.stats_btn = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(st_x, _TOP_BTN_Y, s_h, s_h),
+            text="",
+            manager=self.ui,
+            object_id="#top_btn",
+        )
+        self.help_btn = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(hlp_x, _TOP_BTN_Y, s_h, s_h),
             text="",
             manager=self.ui,
             object_id="#top_btn",
@@ -146,8 +157,8 @@ class FruitBoxMenu:
         hint = self.font_hint.render("Press ESC during a game to return here", True, TEXT_SECONDARY)
         self.screen.blit(hint, ((MENU_W - hint.get_width()) // 2, MENU_H - 26))
 
-        overlay_open = self.settings.visible or self.stats_overlay.visible
-        for btn in (self.sp_btn, self.vs_btn, self.settings_btn, self.stats_btn):
+        overlay_open = self.settings.visible or self.stats_overlay.visible or self.help_overlay.visible
+        for btn in (self.sp_btn, self.vs_btn, self.settings_btn, self.stats_btn, self.help_btn):
             if overlay_open and btn.is_enabled:
                 btn.disable()
             elif not overlay_open and not btn.is_enabled:
@@ -160,10 +171,13 @@ class FruitBoxMenu:
         self.screen.blit(self._icon_settings, self._icon_settings.get_rect(center=btn_r.center))
         btn_r = self.stats_btn.get_abs_rect()
         self.screen.blit(self._icon_stats, self._icon_stats.get_rect(center=btn_r.center))
+        btn_r = self.help_btn.get_abs_rect()
+        self.screen.blit(self._icon_help, self._icon_help.get_rect(center=btn_r.center))
 
         # Overlays drawn after ui.draw_ui so they appear on top of the card buttons
         self.settings.draw(self.screen)
         self.stats_overlay.draw(self.screen)
+        self.help_overlay.draw(self.screen)
 
         pygame.display.flip()
 
@@ -185,6 +199,9 @@ class FruitBoxMenu:
                 if self.stats_overlay.handle_event(event):
                     self.ui.process_events(event)
                     continue
+                if self.help_overlay.handle_event(event):
+                    self.ui.process_events(event)
+                    continue
 
                 if event.type == pygame_gui.UI_BUTTON_PRESSED:
                     if event.ui_element == self.sp_btn:
@@ -195,6 +212,8 @@ class FruitBoxMenu:
                         self.settings.toggle()
                     if event.ui_element == self.stats_btn:
                         self.stats_overlay.toggle()
+                    if event.ui_element == self.help_btn:
+                        self.help_overlay.toggle()
 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if self.left_arrow_rect.collidepoint(event.pos):
