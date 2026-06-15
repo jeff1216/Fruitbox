@@ -223,9 +223,14 @@ class FruitBoxVs:
             self.toggle_btn.set_text(new_toggle_text)
 
     def _draw_paused(self):
+        alpha     = int(self._pause_alpha)
         grid_rect = pygame.Rect(self._human_x(), HUD_H + PADDING, BOARD_W, BOARD_H)
-        pygame.draw.rect(self.screen, (180, 178, 170), grid_rect)
+        bg = pygame.Surface((grid_rect.width, grid_rect.height))
+        bg.fill((180, 178, 170))
+        bg.set_alpha(alpha)
+        self.screen.blit(bg, (grid_rect.x, grid_rect.y))
         surf = self.font_sub.render("Paused", True, TEXT_PRIMARY)
+        surf.set_alpha(alpha)
         self.screen.blit(surf, (
             grid_rect.x + (BOARD_W - surf.get_width())  // 2,
             grid_rect.y + (BOARD_H - surf.get_height()) // 2,
@@ -351,6 +356,7 @@ class FruitBoxVs:
         self.show_game_over   = True
         self._result_recorded = False
         self._game_start      = time.time()
+        self._pause_alpha     = 0.0
 
         self._solver_moves = []
         self._solver_ready = self.opponent != "solver"
@@ -466,6 +472,11 @@ class FruitBoxVs:
                         ))
                         self.stats = fruitbox_stats.get_vs_stats()
                         self._result_recorded = True
+
+            if self.human_game.paused:
+                self._pause_alpha = min(255.0, self._pause_alpha + dt * 800)
+            else:
+                self._pause_alpha = 0.0
 
             self.screen.fill(BG)
             self._draw_hud()
