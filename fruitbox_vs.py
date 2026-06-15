@@ -88,7 +88,9 @@ class FruitBoxVs:
 
         self.overlay          = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
         self.ai_board_visible = False
-        self.close_over_rect  = pygame.Rect(0, 0, 0, 0)
+        self.close_over_rect      = pygame.Rect(0, 0, 0, 0)
+        self._game_over_card_rect = pygame.Rect(0, 0, 0, 0)
+        self._restart_over_rect   = pygame.Rect(0, 0, 0, 0)
         self.stats            = fruitbox_stats.get_vs_stats()
 
         # ── pygame_gui ────────────────────────────────────────────
@@ -245,30 +247,40 @@ class FruitBoxVs:
         dim.fill((44, 44, 42, 160))
         self.screen.blit(dim, (0, 0))
 
-        card_w, card_h = 380, 185
+        card_w, card_h = 380, 215
         cx = (WIN_W - card_w) // 2
         cy = (WIN_H - card_h) // 2
         card = pygame.Rect(cx, cy, card_w, card_h)
+        self._game_over_card_rect = card
         pygame.draw.rect(self.screen, (255, 255, 255), card, border_radius=14)
         pygame.draw.rect(self.screen, CELL_BORDER, card, width=1, border_radius=14)
 
-        over  = self.font_over.render("Game Over", True, TEXT_PRIMARY)
-        rsn   = self.font_sub.render(self.over_reason, True, TEXT_SECONDARY)
-        again = self.font_sub.render("Press R to play again", True, TEXT_SECONDARY)
+        over = self.font_over.render("Game Over", True, TEXT_PRIMARY)
+        rsn  = self.font_sub.render(self.over_reason, True, TEXT_SECONDARY)
         w, l, t = self.stats["wins"], self.stats["losses"], self.stats["ties"]
-        rec   = self.font_label.render(f"Record: {w}W  {l}L  {t}T", True, TEXT_SECONDARY)
+        rec  = self.font_label.render(f"Record: {w}W  {l}L  {t}T", True, TEXT_SECONDARY)
 
-        self.screen.blit(over,  (cx + (card_w - over.get_width())  // 2, cy + 22))
-        self.screen.blit(rsn,   (cx + (card_w - rsn.get_width())   // 2, cy + 74))
-        self.screen.blit(again, (cx + (card_w - again.get_width()) // 2, cy + 112))
-        self.screen.blit(rec,   (cx + (card_w - rec.get_width())   // 2, cy + 154))
+        self.screen.blit(over, (cx + (card_w - over.get_width()) // 2, cy + 22))
+        self.screen.blit(rsn,  (cx + (card_w - rsn.get_width())  // 2, cy + 74))
+        self.screen.blit(rec,  (cx + (card_w - rec.get_width())  // 2, cy + 112))
+
+        mouse  = pygame.mouse.get_pos()
+        r_surf = self.font_btn.render("Restart", True, TEXT_PRIMARY)
+        r_px, r_py = 20, 8
+        r_w = r_surf.get_width()  + r_px * 2
+        r_h = r_surf.get_height() + r_py * 2
+        self._restart_over_rect = pygame.Rect(cx + (card_w - r_w) // 2, cy + 156, r_w, r_h)
+        r_hov = self._restart_over_rect.collidepoint(mouse)
+        pygame.draw.rect(self.screen, (190, 188, 180) if r_hov else (210, 208, 200), self._restart_over_rect, border_radius=6)
+        pygame.draw.rect(self.screen, (160, 158, 150), self._restart_over_rect, width=1, border_radius=6)
+        self.screen.blit(r_surf, (self._restart_over_rect.x + r_px, self._restart_over_rect.y + r_py))
 
         x_surf = self.font_btn.render("X", True, TEXT_SECONDARY)
         x_pad  = 6
         x_w    = x_surf.get_width()  + x_pad * 2
         x_h    = x_surf.get_height() + x_pad * 2
         self.close_over_rect = pygame.Rect(cx + card_w - x_w - 8, cy + 8, x_w, x_h)
-        if self.close_over_rect.collidepoint(pygame.mouse.get_pos()):
+        if self.close_over_rect.collidepoint(mouse):
             pygame.draw.rect(self.screen, (230, 228, 222), self.close_over_rect, border_radius=5)
         self.screen.blit(x_surf, (self.close_over_rect.x + x_pad, self.close_over_rect.y + x_pad))
 
@@ -382,8 +394,13 @@ class FruitBoxVs:
                             self.last_ai_move = time.time() + AI_INTERVAL
 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if self.game_over and self.show_game_over and self.close_over_rect.collidepoint(event.pos):
-                        self.show_game_over = False
+                    if self.game_over and self.show_game_over:
+                        if not self._game_over_card_rect.collidepoint(event.pos):
+                            self.show_game_over = False
+                        elif self.close_over_rect.collidepoint(event.pos):
+                            self.show_game_over = False
+                        elif self._restart_over_rect.collidepoint(event.pos):
+                            self.reset()
                     else:
                         if self.game_over or (not self.human_over and not self.human_game.paused):
                             cell = self._pixel_to_cell(*event.pos)

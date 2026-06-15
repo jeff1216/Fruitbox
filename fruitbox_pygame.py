@@ -95,9 +95,10 @@ class FruitBoxPygame:
         self.over_reason      = ""
         self._game_start      = time.time()
         self._result_recorded = False
-        self.show_game_over       = True
-        self.close_over_rect      = pygame.Rect(0, 0, 0, 0)
-        self._game_over_card_rect = pygame.Rect(0, 0, 0, 0)
+        self.show_game_over         = True
+        self.close_over_rect        = pygame.Rect(0, 0, 0, 0)
+        self._game_over_card_rect   = pygame.Rect(0, 0, 0, 0)
+        self._restart_over_rect     = pygame.Rect(0, 0, 0, 0)
 
         self.overlay = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
 
@@ -218,7 +219,7 @@ class FruitBoxPygame:
         dim.fill((44, 44, 42, 160))
         self.screen.blit(dim, (0, 0))
 
-        card_w, card_h = 340, 180
+        card_w, card_h = 340, 210
         card_x = (WIN_W - card_w) // 2
         card_y = (WIN_H - card_h) // 2
         card   = pygame.Rect(card_x, card_y, card_w, card_h)
@@ -233,16 +234,26 @@ class FruitBoxPygame:
         score_text = f"Final score: {self.game.score}"
         self.screen.blit(self.font_score.render(score_text, True, TEXT_PRIMARY),
                          (card_x + (card_w - self.font_score.size(score_text)[0]) // 2, card_y + 110))
-        self.screen.blit(self.font_over_sub.render("Press R to play again", True, TEXT_SECONDARY),
-                         (card_x + (card_w - self.font_over_sub.size("Press R to play again")[0]) // 2, card_y + 146))
 
         font_btn = pygame.font.SysFont("Arial", 13, bold=True)
+        mouse    = pygame.mouse.get_pos()
+
+        r_surf = font_btn.render("Restart", True, TEXT_PRIMARY)
+        r_px, r_py = 20, 8
+        r_w = r_surf.get_width()  + r_px * 2
+        r_h = r_surf.get_height() + r_py * 2
+        self._restart_over_rect = pygame.Rect(card_x + (card_w - r_w) // 2, card_y + 156, r_w, r_h)
+        r_hov = self._restart_over_rect.collidepoint(mouse)
+        pygame.draw.rect(self.screen, (190, 188, 180) if r_hov else (210, 208, 200), self._restart_over_rect, border_radius=6)
+        pygame.draw.rect(self.screen, (160, 158, 150), self._restart_over_rect, width=1, border_radius=6)
+        self.screen.blit(r_surf, (self._restart_over_rect.x + r_px, self._restart_over_rect.y + r_py))
+
         x_surf = font_btn.render("X", True, TEXT_SECONDARY)
         x_pad  = 6
         x_w    = x_surf.get_width()  + x_pad * 2
         x_h    = x_surf.get_height() + x_pad * 2
         self.close_over_rect = pygame.Rect(card_x + card_w - x_w - 8, card_y + 8, x_w, x_h)
-        if self.close_over_rect.collidepoint(pygame.mouse.get_pos()):
+        if self.close_over_rect.collidepoint(mouse):
             pygame.draw.rect(self.screen, (230, 228, 222), self.close_over_rect, border_radius=5)
         self.screen.blit(x_surf, (self.close_over_rect.x + x_pad, self.close_over_rect.y + x_pad))
 
@@ -295,6 +306,8 @@ class FruitBoxPygame:
                             self.show_game_over = False
                         elif self.close_over_rect.collidepoint(event.pos):
                             self.show_game_over = False
+                        elif self._restart_over_rect.collidepoint(event.pos):
+                            self.restart()
                     else:
                         if self.game_over or not self.game.paused:
                             cell = self.pixel_to_cell(*event.pos)
