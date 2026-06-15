@@ -4,7 +4,7 @@ A puzzle game where you select groups of fruits whose numbers sum to 10 to clear
 
 ## Download
 
-**[Download FruitBox.exe](https://github.com/jeff1216/Fruitbox/releases/download/latest/FruitBox.exe)**
+**[Download FruitBox.exe](https://github.com/jeff1216/Fruitbox/releases/latest/download/FruitBox.exe)**
 
 Windows only. No installation required — just run the executable.
 
