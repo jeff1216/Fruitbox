@@ -99,6 +99,7 @@ class FruitBoxPygame:
         self.close_over_rect        = pygame.Rect(0, 0, 0, 0)
         self._game_over_card_rect   = pygame.Rect(0, 0, 0, 0)
         self._restart_over_rect     = pygame.Rect(0, 0, 0, 0)
+        self._pause_alpha           = 0.0
 
         self.overlay = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
 
@@ -205,10 +206,15 @@ class FruitBoxPygame:
             pygame.draw.rect(self.screen, VALID_BOR if self.sel_valid else SEL_BORDER, sel, width=2, border_radius=8)
 
     def draw_paused(self):
+        alpha     = int(self._pause_alpha)
         grid_rect = pygame.Rect(PADDING, HUD_H + PADDING, COLS * CELL, ROWS * CELL)
-        pygame.draw.rect(self.screen, (180, 178, 170), grid_rect)
+        bg = pygame.Surface((grid_rect.width, grid_rect.height))
+        bg.fill((180, 178, 170))
+        bg.set_alpha(alpha)
+        self.screen.blit(bg, (grid_rect.x, grid_rect.y))
         font_p = pygame.font.SysFont("Arial", 36, bold=True)
         surf   = font_p.render("Paused", True, TEXT_PRIMARY)
+        surf.set_alpha(alpha)
         self.screen.blit(surf, (
             grid_rect.x + (grid_rect.width  - surf.get_width())  // 2,
             grid_rect.y + (grid_rect.height - surf.get_height()) // 2,
@@ -269,6 +275,7 @@ class FruitBoxPygame:
         self.show_game_over   = True
         self._game_start      = time.time()
         self._result_recorded = False
+        self._pause_alpha     = 0.0
         self.pause_btn.enable()
 
     # ── main loop ─────────────────────────────────────────────────
@@ -360,6 +367,11 @@ class FruitBoxPygame:
                             seed=self.game.seed,
                         ))
                         self._result_recorded = True
+
+            if self.game.paused:
+                self._pause_alpha = min(255.0, self._pause_alpha + dt * 800)
+            else:
+                self._pause_alpha = 0.0
 
             self.screen.fill(BG)
             self.draw_hud()
