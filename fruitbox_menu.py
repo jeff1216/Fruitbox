@@ -376,11 +376,16 @@ class FruitBoxMenu:
         self.screen.blit(hint, ((MENU_W - hint.get_width()) // 2, MENU_H - 26))
 
         overlay_open = self.settings.visible or self.stats_overlay.visible or self.help_overlay.visible or self.custom_overlay.visible
-        for btn in (self.sp_btn, self.vs_btn, self.settings_btn, self.stats_btn, self.help_btn, self.dm_btn):
+        for btn in (self.sp_btn, self.settings_btn, self.stats_btn, self.help_btn, self.dm_btn):
             if overlay_open and btn.is_enabled:
                 btn.disable()
             elif not overlay_open and not btn.is_enabled:
                 btn.enable()
+        vs_enabled = not overlay_open and self.grid_type != "custom"
+        if vs_enabled and not self.vs_btn.is_enabled:
+            self.vs_btn.enable()
+        elif not vs_enabled and self.vs_btn.is_enabled:
+            self.vs_btn.disable()
 
         self.ui.update(dt)
         self.ui.draw_ui(self.screen)
