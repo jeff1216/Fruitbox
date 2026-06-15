@@ -252,8 +252,14 @@ class FruitBoxVs:
         cy = (WIN_H - card_h) // 2
         card = pygame.Rect(cx, cy, card_w, card_h)
         self._game_over_card_rect = card
-        pygame.draw.rect(self.screen, (255, 255, 255), card, border_radius=14)
-        pygame.draw.rect(self.screen, CELL_BORDER, card, width=1, border_radius=14)
+
+        h, a = self.human_game.score, self.ai_game.score
+        if   h > a: card_bg, card_border = (232, 252, 240), (22,  163,  74)
+        elif a > h: card_bg, card_border = (254, 234, 234), (185,  60,  60)
+        else:       card_bg, card_border = (255, 251, 220), (180, 140,  30)
+
+        pygame.draw.rect(self.screen, card_bg,     card, border_radius=14)
+        pygame.draw.rect(self.screen, card_border, card, width=2, border_radius=14)
 
         over = self.font_over.render("Game Over", True, TEXT_PRIMARY)
         rsn  = self.font_sub.render(self.over_reason, True, TEXT_SECONDARY)
