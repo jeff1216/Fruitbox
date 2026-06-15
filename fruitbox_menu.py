@@ -48,6 +48,7 @@ class _CustomOverlay:
         self._cols_entry    = None
         self._rows_entry    = None
         self._seed_entry    = None
+        self._time_entry    = None
         self._grid_dd       = None
         self._grid_type_str = "Random"
         self._reset()
@@ -60,7 +61,7 @@ class _CustomOverlay:
 
     def _build_ui(self):
         card_w  = 440
-        card_h  = 300
+        card_h  = 350
         cx      = (MENU_W - card_w) // 2
         cy      = (MENU_H - card_h) // 2
         pad     = 32
@@ -102,6 +103,13 @@ class _CustomOverlay:
             manager=self.ui,
         )
 
+        y += row_gap
+        self._time_entry = pygame_gui.elements.UITextEntryLine(
+            relative_rect=pygame.Rect(right_x - 100, y - 6, 100, field_h),
+            manager=self.ui,
+        )
+        self._time_entry.set_text(str(self._time_limit))
+
     def reload_theme(self):
         self._save_values()
         self._build_ui()
@@ -118,21 +126,27 @@ class _CustomOverlay:
         if self._seed_entry:
             t = self._seed_entry.get_text().strip()
             self._seed = int(t) if t.isdigit() else -1
+        if self._time_entry:
+            t = self._time_entry.get_text().strip()
+            if t.isdigit() and int(t) > 0:
+                self._time_limit = max(10, min(3600, int(t)))
 
     def _reset(self):
         self._cols          = 17
         self._rows          = 10
         self._seed          = -1
+        self._time_limit    = 120
         self._grid_type_str = "Random"
         self._build_ui()
 
     def get_settings(self):
         self._save_values()
         return {
-            "cols":      self._cols,
-            "rows":      self._rows,
-            "seed":      None if self._seed < 0 else self._seed,
-            "grid_base": "solvable" if self._grid_type_str == "Solvable" else "random",
+            "cols":       self._cols,
+            "rows":       self._rows,
+            "seed":       None if self._seed < 0 else self._seed,
+            "grid_base":  "solvable" if self._grid_type_str == "Solvable" else "random",
+            "time_limit": self._time_limit,
         }
 
     def toggle(self):
@@ -169,7 +183,7 @@ class _CustomOverlay:
         dim.fill(C["DIM"])
         screen.blit(dim, (0, 0))
 
-        card_w, card_h = 440, 300
+        card_w, card_h = 440, 350
         cx = (w - card_w) // 2
         cy = (h - card_h) // 2
         self._card_rect = pygame.Rect(cx, cy, card_w, card_h)
@@ -196,7 +210,7 @@ class _CustomOverlay:
         row_gap = 48
         pygame.draw.line(screen, C["DIVIDER"], (cx + pad, y - 22), (cx + card_w - pad, y - 22))
 
-        for i, lbl in enumerate(["GRID SIZE", "SEED", "GRID TYPE"]):
+        for i, lbl in enumerate(["GRID SIZE", "SEED", "GRID TYPE", "TIME (SEC)"]):
             s = self._font_label.render(lbl, True, C["TEXT_SECONDARY"])
             screen.blit(s, (cx + pad, y + i * row_gap))
 
@@ -511,7 +525,7 @@ class FruitBoxMenu:
         if mode == "single_player":
             if self.grid_type == "custom":
                 _s   = self.custom_overlay.get_settings()
-                game = FruitBoxGame(rows=_s["rows"], columns=_s["cols"], grid_type=_s["grid_base"])
+                game = FruitBoxGame(rows=_s["rows"], columns=_s["cols"], grid_type=_s["grid_base"], time_limit=_s["time_limit"])
                 game.reset(seed=_s["seed"])
                 screen = self._resize_keep_top(*game_window_size(_s["rows"], _s["cols"]))
             else:
