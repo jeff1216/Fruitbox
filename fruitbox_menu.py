@@ -96,11 +96,11 @@ class FruitBoxMenu:
             text="", manager=self.ui, object_id="#top_btn",
         )
         self.help_btn = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(hlp_x, _TOP_BTN_Y, s_h, s_h),
+            relative_rect=pygame.Rect(dm_x, _TOP_BTN_Y, s_h, s_h),
             text="", manager=self.ui, object_id="#top_btn",
         )
         self.dm_btn = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(dm_x, _TOP_BTN_Y, s_h, s_h),
+            relative_rect=pygame.Rect(hlp_x, _TOP_BTN_Y, s_h, s_h),
             text="", manager=self.ui, object_id="#top_btn",
         )
 
