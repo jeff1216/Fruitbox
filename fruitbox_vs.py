@@ -334,6 +334,7 @@ class FruitBoxVs:
 
     def reset(self):
         self.human_game.reset()
+        self.human_game.paused = False
 
         if self.opponent == "rl_model":
             self.ai_env.reset()

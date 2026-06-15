@@ -277,6 +277,7 @@ class FruitBoxPygame:
 
     def restart(self):
         self.game.reset()
+        self.game.paused      = False
         self.drag_start       = None
         self.drag_end         = None
         self.sel_valid        = False
