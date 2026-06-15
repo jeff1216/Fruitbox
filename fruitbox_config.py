@@ -5,10 +5,14 @@ import pygame
 _PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
 
 _DEFAULTS: dict[str, int] = {
-    "key_pause":   pygame.K_SPACE,
-    "key_restart": pygame.K_r,
-    "key_menu":    pygame.K_ESCAPE,
-    "dark_mode":   1,
+    "key_pause":        pygame.K_SPACE,
+    "key_restart":      pygame.K_r,
+    "key_menu":         pygame.K_ESCAPE,
+    "dark_mode":        1,
+    "custom_cols":      17,
+    "custom_rows":      10,
+    "custom_grid_base": 0,   # 0=random, 1=solvable
+    "custom_seed":      -1,  # -1=random
 }
 
 _cfg: dict[str, int] = {}

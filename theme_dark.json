@@ -69,5 +69,40 @@
             "border_width":        "1",
             "shadow_width":        "0"
         }
+    },
+    "text_entry_line": {
+        "colours": {
+            "dark_bg":        "#2a2826",
+            "focused_bg":     "#2a2826",
+            "disabled_bg":    "#1e1e1c",
+            "selected_bg":    "#1a3050",
+            "normal_border":  "#514f4a",
+            "focused_border": "#5096e6",
+            "disabled_border":"#363432",
+            "normal_text":    "#dcdad4",
+            "selected_text":  "#dcdad4",
+            "disabled_text":  "#82807a",
+            "text_cursor":    "#dcdad4"
+        },
+        "font": {
+            "name": "arial",
+            "size": "13"
+        },
+        "misc": {
+            "border_width": "1",
+            "shadow_width": "0"
+        }
+    },
+    "selection_list": {
+        "colours": {
+            "dark_bg":     "#2a2826",
+            "hovered_bg":  "#383734",
+            "selected_bg": "#1a3050",
+            "normal_border":  "#514f4a",
+            "normal_text":    "#dcdad4",
+            "hovered_text":   "#dcdad4",
+            "selected_text":  "#5096e6",
+            "disabled_text":  "#82807a"
+        }
     }
 }

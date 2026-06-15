@@ -3,6 +3,7 @@ import sys
 import pygame
 import pygame_gui
 import fruitbox_colors
+import fruitbox_config
 
 from fruitbox_game import FruitBoxGame
 from fruitbox_settings import SettingsOverlay
@@ -19,7 +20,7 @@ MENU_H = GAME_H
 
 ACCENT       = (24,  95, 165)
 
-GRID_TYPES = ["random", "solvable"]
+GRID_TYPES = ["random", "solvable", "custom"]
 
 # card button dimensions (Single Player / vs AI)
 _CARD_W = 280
@@ -28,6 +29,202 @@ _CARD_Y = 240
 
 # top-right buttons
 _TOP_BTN_Y = 14
+
+# gear icon dimensions for custom pill
+_GEAR_SZ  = 18
+_GEAR_GAP = 8
+
+
+class _CustomOverlay:
+    def __init__(self):
+        self.visible        = False
+        self._card_rect     = pygame.Rect(0, 0, 0, 0)
+        self.close_rect     = pygame.Rect(0, 0, 0, 0)
+        self._reset_rect    = pygame.Rect(0, 0, 0, 0)
+        self._font_title    = None
+        self._font_label    = None
+        self._font_btn      = None
+        self.ui             = None
+        self._cols_entry    = None
+        self._rows_entry    = None
+        self._seed_entry    = None
+        self._grid_dd       = None
+        self._grid_type_str = ["Random", "Solvable"][fruitbox_config.get("custom_grid_base")]
+        self._build_ui()
+
+    def _ensure_fonts(self):
+        if self._font_title is None:
+            self._font_title = pygame.font.SysFont("Arial", 28, bold=True)
+            self._font_label = pygame.font.SysFont("Arial", 13)
+            self._font_btn   = pygame.font.SysFont("Arial", 13, bold=True)
+
+    def _build_ui(self):
+        card_w  = 440
+        card_h  = 280
+        cx      = (MENU_W - card_w) // 2
+        cy      = (MENU_H - card_h) // 2
+        pad     = 32
+        field_h = 30
+        right_x = cx + card_w - pad
+        y       = cy + 80
+        row_gap = 48
+
+        self.ui = pygame_gui.UIManager((MENU_W, MENU_H), get_theme())
+
+        col_w = 55
+        row_w = 55
+        gap_x = 30
+
+        self._cols_entry = pygame_gui.elements.UITextEntryLine(
+            relative_rect=pygame.Rect(right_x - col_w - gap_x - row_w, y - 6, col_w, field_h),
+            manager=self.ui,
+        )
+        self._cols_entry.set_text(str(fruitbox_config.get("custom_cols")))
+
+        self._rows_entry = pygame_gui.elements.UITextEntryLine(
+            relative_rect=pygame.Rect(right_x - row_w, y - 6, row_w, field_h),
+            manager=self.ui,
+        )
+        self._rows_entry.set_text(str(fruitbox_config.get("custom_rows")))
+
+        y += row_gap
+        seed_val = fruitbox_config.get("custom_seed")
+        self._seed_entry = pygame_gui.elements.UITextEntryLine(
+            relative_rect=pygame.Rect(right_x - 200, y - 6, 200, field_h),
+            manager=self.ui,
+        )
+        self._seed_entry.set_text("" if seed_val < 0 else str(seed_val))
+
+        y += row_gap
+        self._grid_dd = pygame_gui.elements.UIDropDownMenu(
+            options_list=["Random", "Solvable"],
+            starting_option=self._grid_type_str,
+            relative_rect=pygame.Rect(right_x - 160, y - 6, 160, field_h),
+            manager=self.ui,
+        )
+
+    def reload_theme(self):
+        self._save_values()
+        self._build_ui()
+
+    def _save_values(self):
+        if self._cols_entry:
+            t = self._cols_entry.get_text().strip()
+            if t.isdigit():
+                fruitbox_config.set_key("custom_cols", max(5, min(30, int(t))))
+        if self._rows_entry:
+            t = self._rows_entry.get_text().strip()
+            if t.isdigit():
+                fruitbox_config.set_key("custom_rows", max(3, min(20, int(t))))
+        if self._seed_entry:
+            t = self._seed_entry.get_text().strip()
+            fruitbox_config.set_key("custom_seed", int(t) if t.isdigit() else -1)
+        fruitbox_config.set_key("custom_grid_base", 0 if self._grid_type_str == "Random" else 1)
+
+    def _reset(self):
+        fruitbox_config.set_key("custom_cols",      17)
+        fruitbox_config.set_key("custom_rows",      10)
+        fruitbox_config.set_key("custom_seed",      -1)
+        fruitbox_config.set_key("custom_grid_base", 0)
+        self._grid_type_str = "Random"
+        self._build_ui()
+
+    def get_settings(self):
+        self._save_values()
+        seed_val = fruitbox_config.get("custom_seed")
+        return {
+            "cols":      fruitbox_config.get("custom_cols"),
+            "rows":      fruitbox_config.get("custom_rows"),
+            "seed":      None if seed_val < 0 else seed_val,
+            "grid_base": "solvable" if self._grid_type_str == "Solvable" else "random",
+        }
+
+    def toggle(self):
+        self.visible = not self.visible
+
+    def handle_event(self, event) -> bool:
+        if not self.visible:
+            return False
+        if self.ui:
+            self.ui.process_events(event)
+        if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+            if event.ui_element == self._grid_dd:
+                self._grid_type_str = event.text
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self._save_values()
+            self.visible = False
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self._reset_rect.collidepoint(event.pos):
+                self._reset()
+            elif not self._card_rect.collidepoint(event.pos) or self.close_rect.collidepoint(event.pos):
+                self._save_values()
+                self.visible = False
+        return True
+
+    def draw(self, screen, dt):
+        if not self.visible:
+            return
+        self._ensure_fonts()
+        C     = fruitbox_colors.C
+        w, h  = screen.get_size()
+        mouse = pygame.mouse.get_pos()
+
+        dim = pygame.Surface((w, h), pygame.SRCALPHA)
+        dim.fill(C["DIM"])
+        screen.blit(dim, (0, 0))
+
+        card_w, card_h = 440, 280
+        cx = (w - card_w) // 2
+        cy = (h - card_h) // 2
+        self._card_rect = pygame.Rect(cx, cy, card_w, card_h)
+        pygame.draw.rect(screen, C["CARD_BG"],     self._card_rect, border_radius=14)
+        pygame.draw.rect(screen, C["CARD_BORDER"], self._card_rect, width=1, border_radius=14)
+
+        title = self._font_title.render("Custom Mode", True, C["TEXT_PRIMARY"])
+        screen.blit(title, (cx + (card_w - title.get_width()) // 2, cy + 22))
+
+        x_surf = self._font_btn.render("X", True, C["TEXT_SECONDARY"])
+        x_pad  = 6
+        x_w    = x_surf.get_width()  + x_pad * 2
+        x_h    = x_surf.get_height() + x_pad * 2
+        self.close_rect = pygame.Rect(cx + card_w - x_w - 8, cy + 8, x_w, x_h)
+        if self.close_rect.collidepoint(mouse):
+            pygame.draw.rect(screen, C["BTN_CLOSE_HOV"], self.close_rect, border_radius=5)
+        screen.blit(x_surf, (self.close_rect.x + x_pad, self.close_rect.y + x_pad))
+
+        pad     = 32
+        y       = cy + 80
+        row_gap = 48
+        pygame.draw.line(screen, C["DIVIDER"], (cx + pad, y - 22), (cx + card_w - pad, y - 22))
+
+        for i, lbl in enumerate(["GRID SIZE", "SEED", "GRID TYPE"]):
+            s = self._font_label.render(lbl, True, C["TEXT_SECONDARY"])
+            screen.blit(s, (cx + pad, y + i * row_gap))
+
+        if self._cols_entry and self._rows_entry:
+            cr = self._cols_entry.get_abs_rect()
+            rr = self._rows_entry.get_abs_rect()
+            xm = self._font_label.render("×", True, C["TEXT_SECONDARY"])
+            screen.blit(xm, (
+                cr.right + (rr.left - cr.right - xm.get_width()) // 2,
+                cr.centery - xm.get_height() // 2,
+            ))
+
+        rst_surf = self._font_btn.render("Reset to Defaults", True, C["TEXT_PRIMARY"])
+        rst_px, rst_py = 14, 6
+        rst_w = rst_surf.get_width()  + rst_px * 2
+        rst_h = rst_surf.get_height() + rst_py * 2
+        rst_x = cx + (card_w - rst_w) // 2
+        rst_y = cy + card_h - rst_h - 16
+        self._reset_rect = pygame.Rect(rst_x, rst_y, rst_w, rst_h)
+        hov_rst = self._reset_rect.collidepoint(mouse)
+        pygame.draw.rect(screen, C["BTN_HOV"] if hov_rst else C["BTN"], self._reset_rect, border_radius=6)
+        pygame.draw.rect(screen, C["BTN_BORDER"], self._reset_rect, width=1, border_radius=6)
+        screen.blit(rst_surf, (rst_x + rst_px, rst_y + rst_py))
+
+        if self.ui:
+            self.ui.update(dt)
+            self.ui.draw_ui(screen)
 
 
 class FruitBoxMenu:
@@ -50,6 +247,8 @@ class FruitBoxMenu:
         self.settings       = SettingsOverlay()
         self.stats_overlay  = StatsOverlay()
         self.help_overlay   = HelpOverlay()
+        self.custom_overlay = _CustomOverlay()
+        self.gear_btn_rect  = pygame.Rect(0, 0, 0, 0)
 
         self._build_ui()
 
@@ -62,6 +261,9 @@ class FruitBoxMenu:
         self._icon_stats    = fruitbox_colors.load_icon(os.path.join(_ASSETS, "waveform.path.ecg.png"), icon_sz)
         self._icon_help     = fruitbox_colors.load_icon(os.path.join(_ASSETS, "questionmark.circle.png"), icon_sz)
         self._icon_dm       = fruitbox_colors.load_icon(os.path.join(_ASSETS, "circle.lefthalf.fill.png"), icon_sz)
+        _raw = pygame.image.load(os.path.join(_ASSETS, "gearshape.png")).convert_alpha()
+        _raw = pygame.transform.smoothscale(_raw, (_GEAR_SZ, _GEAR_SZ))
+        self._icon_gear_sm  = fruitbox_colors.tint_icon(_raw, fruitbox_colors.C["ACCENT"])
 
         self.ui = pygame_gui.UIManager((MENU_W, MENU_H), get_theme())
 
@@ -111,7 +313,8 @@ class FruitBoxMenu:
     # ── drawing ───────────────────────────────────────────────────
 
     def _draw(self, dt):
-        C = fruitbox_colors.C
+        C     = fruitbox_colors.C
+        mouse = pygame.mouse.get_pos()
         self.screen.fill(C["BG"])
 
         # title
@@ -123,7 +326,12 @@ class FruitBoxMenu:
 
         pill_surf  = self.font_toggle.render(self.grid_type.capitalize(), True, C["ACCENT"])
         pill_pad_x, pill_pad_y = 28, 12
-        pill_w = max(pill_surf.get_width() + pill_pad_x * 2, 180)
+        _max_cw = 0
+        for _gt in GRID_TYPES:
+            _s = self.font_toggle.render(_gt.capitalize(), True, C["ACCENT"])
+            _w = _s.get_width() + (_GEAR_GAP + _GEAR_SZ if _gt == "custom" else 0)
+            _max_cw = max(_max_cw, _w)
+        pill_w = max(_max_cw + pill_pad_x * 2, 200)
         pill_h = pill_surf.get_height() + pill_pad_y * 2
 
         arr_click_w = self._icon_arr_l.get_width() + 24
@@ -139,10 +347,26 @@ class FruitBoxMenu:
         pill_rect = pygame.Rect(x, gt_cy - pill_h // 2, pill_w, pill_h)
         pygame.draw.rect(self.screen, C["PILL_BG"], pill_rect, border_radius=20)
         pygame.draw.rect(self.screen, C["PILL_BORDER"], pill_rect, width=2, border_radius=20)
-        self.screen.blit(pill_surf, (
-            x + (pill_w - pill_surf.get_width())  // 2,
-            gt_cy - pill_surf.get_height() // 2,
-        ))
+        if self.grid_type == "custom":
+            _cw  = pill_surf.get_width() + _GEAR_GAP + _GEAR_SZ
+            _csx = x + (pill_w - _cw) // 2
+            self.screen.blit(pill_surf, (_csx, gt_cy - pill_surf.get_height() // 2))
+            _gx  = _csx + pill_surf.get_width() + _GEAR_GAP
+            _gy  = gt_cy - _GEAR_SZ // 2
+            _gcr = _GEAR_SZ // 2 + 5
+            _gcx = _gx + _GEAR_SZ // 2
+            self.gear_btn_rect = pygame.Rect(_gcx - _gcr, gt_cy - _gcr, _gcr * 2, _gcr * 2)
+            if self.gear_btn_rect.collidepoint(mouse):
+                _circ = pygame.Surface((_gcr * 2, _gcr * 2), pygame.SRCALPHA)
+                pygame.draw.circle(_circ, (255, 255, 255, 70), (_gcr, _gcr), _gcr)
+                self.screen.blit(_circ, self.gear_btn_rect.topleft)
+            self.screen.blit(self._icon_gear_sm, (_gx, _gy))
+        else:
+            self.gear_btn_rect = pygame.Rect(0, 0, 0, 0)
+            self.screen.blit(pill_surf, (
+                x + (pill_w - pill_surf.get_width()) // 2,
+                gt_cy - pill_surf.get_height() // 2,
+            ))
         x += pill_w + spacing
 
         self.right_arrow_rect = pygame.Rect(x, gt_cy - pill_h // 2, arr_click_w, pill_h)
@@ -152,7 +376,7 @@ class FruitBoxMenu:
         hint = self.font_hint.render("Press ESC during a game to return here", True, C["TEXT_SECONDARY"])
         self.screen.blit(hint, ((MENU_W - hint.get_width()) // 2, MENU_H - 26))
 
-        overlay_open = self.settings.visible or self.stats_overlay.visible or self.help_overlay.visible
+        overlay_open = self.settings.visible or self.stats_overlay.visible or self.help_overlay.visible or self.custom_overlay.visible
         for btn in (self.sp_btn, self.vs_btn, self.settings_btn, self.stats_btn, self.help_btn, self.dm_btn):
             if overlay_open and btn.is_enabled:
                 btn.disable()
@@ -175,6 +399,7 @@ class FruitBoxMenu:
         self.settings.draw(self.screen)
         self.stats_overlay.draw(self.screen)
         self.help_overlay.draw(self.screen)
+        self.custom_overlay.draw(self.screen, dt)
 
         pygame.display.flip()
 
@@ -199,6 +424,9 @@ class FruitBoxMenu:
                 if self.help_overlay.handle_event(event):
                     self.ui.process_events(event)
                     continue
+                if self.custom_overlay.handle_event(event):
+                    self.ui.process_events(event)
+                    continue
 
                 if event.type == pygame_gui.UI_BUTTON_PRESSED:
                     if event.ui_element == self.sp_btn:
@@ -214,6 +442,7 @@ class FruitBoxMenu:
                     if event.ui_element == self.dm_btn:
                         fruitbox_colors.set_dark(not fruitbox_colors.is_dark())
                         self.stats_overlay.reload_theme()
+                        self.custom_overlay.reload_theme()
                         self._build_ui()
 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -221,6 +450,8 @@ class FruitBoxMenu:
                         self.grid_type_idx = (self.grid_type_idx - 1) % len(GRID_TYPES)
                     elif self.right_arrow_rect.collidepoint(event.pos):
                         self.grid_type_idx = (self.grid_type_idx + 1) % len(GRID_TYPES)
+                    elif self.gear_btn_rect.collidepoint(event.pos):
+                        self.custom_overlay.toggle()
                     elif self.watch_btn_rect.collidepoint(event.pos):
                         return "watch_ai"
 
@@ -254,8 +485,13 @@ class FruitBoxMenu:
 
     def _launch(self, mode):
         if mode == "single_player":
-            game = FruitBoxGame(grid_type=self.grid_type)
-            game.reset()
+            if self.grid_type == "custom":
+                _s   = self.custom_overlay.get_settings()
+                game = FruitBoxGame(grid_type=_s["grid_base"])
+                game.reset(seed=_s["seed"])
+            else:
+                game = FruitBoxGame(grid_type=self.grid_type)
+                game.reset()
             screen = pygame.display.set_mode((GAME_W, GAME_H))
             FruitBoxPygame(game=game, screen=screen).run()
             self.screen = pygame.display.set_mode((MENU_W, MENU_H))
@@ -279,7 +515,8 @@ class FruitBoxMenu:
                 (VS_H - loading_surf.get_height()) // 2,
             ))
             pygame.display.flip()
-            FruitBoxVs(opponent="rl_model", screen=screen, grid_type=self.grid_type).run()
+            _gt = self.custom_overlay.get_settings()["grid_base"] if self.grid_type == "custom" else self.grid_type
+            FruitBoxVs(opponent="rl_model", screen=screen, grid_type=_gt).run()
             self.screen = self._resize_keep_top(MENU_W, MENU_H)
 
         elif mode == "watch_ai":
@@ -301,7 +538,8 @@ class FruitBoxMenu:
                 (GAME_H - loading_surf.get_height()) // 2,
             ))
             pygame.display.flip()
-            FruitBoxAiWatch(screen=screen, grid_type=self.grid_type).run()
+            _gt = self.custom_overlay.get_settings()["grid_base"] if self.grid_type == "custom" else self.grid_type
+            FruitBoxAiWatch(screen=screen, grid_type=_gt).run()
             self.screen = pygame.display.set_mode((MENU_W, MENU_H))
 
     # ── main ──────────────────────────────────────────────────────
