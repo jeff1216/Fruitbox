@@ -220,21 +220,24 @@ class FruitBoxMenu:
     # ── helpers ───────────────────────────────────────────────────
 
     @staticmethod
-    def _center_window(w, h):
+    def _resize_keep_top(w, h):
+        """Resize the window: horizontally centered on the old window, top edge fixed."""
         try:
-            import ctypes
-            sizes = pygame.display.get_desktop_sizes()
-            if sizes:
-                sw, sh = sizes[0]
-                hwnd = pygame.display.get_wm_info()["window"]
-                ctypes.windll.user32.SetWindowPos(
-                    hwnd, 0,
-                    (sw - w) // 2, (sh - h) // 2,
-                    0, 0,
-                    0x0001 | 0x0004,  # SWP_NOSIZE | SWP_NOZORDER
-                )
+            import ctypes, ctypes.wintypes
+            hwnd = pygame.display.get_wm_info()["window"]
+            rect = ctypes.wintypes.RECT()
+            ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
+            cx = (rect.left + rect.right) // 2
+            y  = rect.top
+            screen = pygame.display.set_mode((w, h))
+            hwnd = pygame.display.get_wm_info()["window"]
+            ctypes.windll.user32.SetWindowPos(
+                hwnd, 0, cx - w // 2, y, 0, 0,
+                0x0001 | 0x0004,
+            )
+            return screen
         except Exception:
-            pass
+            return pygame.display.set_mode((w, h))
 
     # ── launchers ─────────────────────────────────────────────────
 
@@ -243,10 +246,8 @@ class FruitBoxMenu:
             game = FruitBoxGame(grid_type=self.grid_type)
             game.reset()
             screen = pygame.display.set_mode((GAME_W, GAME_H))
-            self._center_window(GAME_W, GAME_H)
             FruitBoxPygame(game=game, screen=screen).run()
             self.screen = pygame.display.set_mode((MENU_W, MENU_H))
-            self._center_window(MENU_W, MENU_H)
 
         elif mode == "vs_ai":
             loading_surf = pygame.font.SysFont("Arial", 21, bold=True).render(
@@ -259,8 +260,7 @@ class FruitBoxMenu:
             pygame.display.flip()
 
             from fruitbox_vs import FruitBoxVs, WIN_W as VS_W, WIN_H as VS_H
-            screen = pygame.display.set_mode((VS_W, VS_H))
-            self._center_window(VS_W, VS_H)
+            screen = self._resize_keep_top(VS_W, VS_H)
             screen.fill(BG)
             screen.blit(loading_surf, (
                 (VS_W - loading_surf.get_width())  // 2,
@@ -268,8 +268,7 @@ class FruitBoxMenu:
             ))
             pygame.display.flip()
             FruitBoxVs(opponent="rl_model", screen=screen, grid_type=self.grid_type).run()
-            self.screen = pygame.display.set_mode((MENU_W, MENU_H))
-            self._center_window(MENU_W, MENU_H)
+            self.screen = self._resize_keep_top(MENU_W, MENU_H)
 
         elif mode == "watch_ai":
             loading_surf = pygame.font.SysFont("Arial", 21, bold=True).render(
@@ -283,7 +282,6 @@ class FruitBoxMenu:
 
             from fruitbox_ai_watch import FruitBoxAiWatch
             screen = pygame.display.set_mode((GAME_W, GAME_H))
-            self._center_window(GAME_W, GAME_H)
             screen.fill(BG)
             screen.blit(loading_surf, (
                 (GAME_W - loading_surf.get_width())  // 2,
@@ -292,7 +290,6 @@ class FruitBoxMenu:
             pygame.display.flip()
             FruitBoxAiWatch(screen=screen, grid_type=self.grid_type).run()
             self.screen = pygame.display.set_mode((MENU_W, MENU_H))
-            self._center_window(MENU_W, MENU_H)
 
     # ── main ──────────────────────────────────────────────────────
 
