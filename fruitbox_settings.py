@@ -1,12 +1,6 @@
 import pygame
 import fruitbox_config
-
-_TEXT_PRIMARY   = (44,  44,  42)
-_TEXT_SECONDARY = (95,  94,  90)
-_CELL_BORDER    = (210, 208, 200)
-_DIVIDER        = (220, 218, 210)
-_ACCENT         = (24,   95, 165)
-_ACCENT_LIGHT   = (220, 235, 255)
+import fruitbox_colors
 
 _BINDINGS = [
     ("key_pause",   "Pause"),
@@ -72,44 +66,45 @@ class SettingsOverlay:
         if not self.visible:
             return
         self._ensure_fonts()
+        C     = fruitbox_colors.C
         w, h  = screen.get_size()
         mouse = pygame.mouse.get_pos()
 
         dim = pygame.Surface((w, h), pygame.SRCALPHA)
-        dim.fill((44, 44, 42, 160))
+        dim.fill(C["DIM"])
         screen.blit(dim, (0, 0))
 
         card_w, card_h = 380, 240
         cx = (w - card_w) // 2
         cy = (h - card_h) // 2
         self._card_rect = pygame.Rect(cx, cy, card_w, card_h)
-        pygame.draw.rect(screen, (255, 255, 255), self._card_rect, border_radius=14)
-        pygame.draw.rect(screen, _CELL_BORDER, self._card_rect, width=1, border_radius=14)
+        pygame.draw.rect(screen, C["CARD_BG"], self._card_rect, border_radius=14)
+        pygame.draw.rect(screen, C["CARD_BORDER"], self._card_rect, width=1, border_radius=14)
 
-        title = self._font_title.render("Settings", True, _TEXT_PRIMARY)
+        title = self._font_title.render("Settings", True, C["TEXT_PRIMARY"])
         screen.blit(title, (cx + (card_w - title.get_width()) // 2, cy + 22))
 
-        x_surf = self._font_btn.render("X", True, _TEXT_SECONDARY)
+        x_surf = self._font_btn.render("X", True, C["TEXT_SECONDARY"])
         x_pad  = 6
         x_w    = x_surf.get_width()  + x_pad * 2
         x_h    = x_surf.get_height() + x_pad * 2
         self.close_rect = pygame.Rect(cx + card_w - x_w - 8, cy + 8, x_w, x_h)
         if self.close_rect.collidepoint(mouse):
-            pygame.draw.rect(screen, (230, 228, 222), self.close_rect, border_radius=5)
+            pygame.draw.rect(screen, C["BTN_CLOSE_HOV"], self.close_rect, border_radius=5)
         screen.blit(x_surf, (self.close_rect.x + x_pad, self.close_rect.y + x_pad))
 
         pad = 32
         y   = cy + 72
         self._key_rects = {}
-        pygame.draw.line(screen, _DIVIDER, (cx + pad, y - 15), (cx + card_w - pad, y - 15))
+        pygame.draw.line(screen, C["DIVIDER"], (cx + pad, y - 15), (cx + card_w - pad, y - 15))
 
         for cfg_key, label in _BINDINGS:
-            label_surf = self._font_label.render(label.upper(), True, _TEXT_SECONDARY)
+            label_surf = self._font_label.render(label.upper(), True, C["TEXT_SECONDARY"])
             screen.blit(label_surf, (cx + pad, y))
 
             is_waiting = self._waiting_for == cfg_key
             key_name   = "..." if is_waiting else pygame.key.name(fruitbox_config.get(cfg_key)).upper()
-            key_surf   = self._font_value.render(key_name, True, _TEXT_PRIMARY if not is_waiting else _ACCENT)
+            key_surf   = self._font_value.render(key_name, True, C["TEXT_PRIMARY"] if not is_waiting else C["ACCENT"])
 
             btn_px, btn_py = 14, 5
             btn_w  = max(key_surf.get_width() + btn_px * 2, 80)
@@ -120,8 +115,8 @@ class SettingsOverlay:
             self._key_rects[cfg_key] = btn_rect
 
             hov    = btn_rect.collidepoint(mouse) and not is_waiting
-            bg     = _ACCENT_LIGHT if is_waiting else ((190, 188, 180) if hov else (210, 208, 200))
-            border = _ACCENT       if is_waiting else (160, 158, 150)
+            bg     = C["ACCENT_LIGHT"] if is_waiting else (C["BTN_HOV"] if hov else C["BTN"])
+            border = C["ACCENT"]       if is_waiting else C["BTN_BORDER"]
             pygame.draw.rect(screen, bg,     btn_rect, border_radius=6)
             pygame.draw.rect(screen, border, btn_rect, width=1, border_radius=6)
             screen.blit(key_surf, (btn_x + (btn_w - key_surf.get_width()) // 2, btn_y + btn_py))
@@ -130,5 +125,5 @@ class SettingsOverlay:
 
         if self._waiting_for:
             hint = self._font_hint.render(
-                "Press any key to bind  •  ESC to cancel", True, _TEXT_SECONDARY)
+                "Press any key to bind  •  ESC to cancel", True, C["TEXT_SECONDARY"])
             screen.blit(hint, (cx + (card_w - hint.get_width()) // 2, cy + card_h - 22))

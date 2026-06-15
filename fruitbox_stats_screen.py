@@ -3,15 +3,8 @@ import pygame_gui
 import time
 import subprocess
 import fruitbox_stats
-from fruitbox_pygame import WIN_W as _W, WIN_H as _H, _THEME
-
-_TEXT_PRIMARY   = (44,  44,  42)
-_TEXT_SECONDARY = (95,  94,  90)
-_CELL_BORDER    = (210, 208, 200)
-_DIVIDER        = (220, 218, 210)
-_ROW_ALT        = (248, 247, 244)
-_ROW_SEL        = (220, 235, 255)
-_ROW_HOV        = (235, 233, 226)
+import fruitbox_colors
+from fruitbox_pygame import WIN_W as _W, WIN_H as _H, get_theme
 
 _CARD_W = 440
 _CARD_H = 360
@@ -74,14 +67,21 @@ class StatsOverlay:
         # ── pygame_gui ────────────────────────────────────────────
         self._grid_filter  = "random"
         self._last_ui_time = time.time()
-        self.ui = pygame_gui.UIManager((_W, _H), _THEME)
+        self._build_ui()
+
+    def _build_ui(self):
+        self.ui = pygame_gui.UIManager((_W, _H), get_theme())
         self._dropdown = pygame_gui.elements.UIDropDownMenu(
             options_list=["Random", "Solvable"],
-            starting_option="Random",
+            starting_option=self._grid_filter.capitalize(),
             relative_rect=pygame.Rect(_CX + _PAD + 84, _BEST_SCORE_Y - 1, 120, 26),
             manager=self.ui,
         )
-        self._dropdown.hide()
+        if not self.visible:
+            self._dropdown.hide()
+
+    def reload_theme(self):
+        self._build_ui()
 
     def _ensure_fonts(self):
         if self._font_title is None:
@@ -174,25 +174,26 @@ class StatsOverlay:
     # ── shared helpers ────────────────────────────────────────────
 
     def _draw_card(self, screen, card_w, card_h):
+        C    = fruitbox_colors.C
         w, h = screen.get_size()
         cx = (w - card_w) // 2
         cy = (h - card_h) // 2
         self._card_rect = pygame.Rect(cx, cy, card_w, card_h)
 
         dim = pygame.Surface((w, h), pygame.SRCALPHA)
-        dim.fill((44, 44, 42, 160))
+        dim.fill(C["DIM"])
         screen.blit(dim, (0, 0))
 
-        pygame.draw.rect(screen, (255, 255, 255), self._card_rect, border_radius=14)
-        pygame.draw.rect(screen, _CELL_BORDER, self._card_rect, width=1, border_radius=14)
+        pygame.draw.rect(screen, C["CARD_BG"], self._card_rect, border_radius=14)
+        pygame.draw.rect(screen, C["CARD_BORDER"], self._card_rect, width=1, border_radius=14)
 
-        x_surf = self._font_btn.render("X", True, _TEXT_SECONDARY)
+        x_surf = self._font_btn.render("X", True, C["TEXT_SECONDARY"])
         x_pad  = 6
         x_w    = x_surf.get_width()  + x_pad * 2
         x_h    = x_surf.get_height() + x_pad * 2
         self.close_rect = pygame.Rect(cx + card_w - x_w - 8, cy + 8, x_w, x_h)
         if self.close_rect.collidepoint(pygame.mouse.get_pos()):
-            pygame.draw.rect(screen, (230, 228, 222), self.close_rect, border_radius=5)
+            pygame.draw.rect(screen, C["BTN_CLOSE_HOV"], self.close_rect, border_radius=5)
         screen.blit(x_surf, (self.close_rect.x + x_pad, self.close_rect.y + x_pad))
 
         return cx, cy
@@ -206,24 +207,25 @@ class StatsOverlay:
     # ── stats view ────────────────────────────────────────────────
 
     def _draw_stats(self, screen):
+        C      = fruitbox_colors.C
         s      = self._summary
         cx, cy = self._draw_card(screen, _CARD_W, _CARD_H)
         mouse  = pygame.mouse.get_pos()
 
-        title = self._font_title.render("Stats", True, _TEXT_PRIMARY)
+        title = self._font_title.render("Stats", True, C["TEXT_PRIMARY"])
         screen.blit(title, (cx + (_CARD_W - title.get_width()) // 2, cy + 20))
 
         y = cy + 66
 
         def row(label, value):
             nonlocal y
-            screen.blit(self._font_label.render(label, True, _TEXT_SECONDARY), (cx + _PAD, y))
-            screen.blit(self._font_value.render(value, True, _TEXT_PRIMARY),   (cx + _PAD, y + 14))
+            screen.blit(self._font_label.render(label, True, C["TEXT_SECONDARY"]), (cx + _PAD, y))
+            screen.blit(self._font_value.render(value, True, C["TEXT_PRIMARY"]),   (cx + _PAD, y + 14))
             y += 44
 
         def divider():
             nonlocal y
-            pygame.draw.line(screen, _DIVIDER, (cx + _PAD, y), (cx + _CARD_W - _PAD, y))
+            pygame.draw.line(screen, C["DIVIDER"], (cx + _PAD, y), (cx + _CARD_W - _PAD, y))
             y += 16
 
         row("GAMES PLAYED", str(s["total_games"]))
@@ -233,7 +235,7 @@ class StatsOverlay:
         divider()
 
         # Best score section — dropdown selects grid type
-        _bs_surf = self._font_label.render("BEST SCORE", True, _TEXT_SECONDARY)
+        _bs_surf = self._font_label.render("BEST SCORE", True, C["TEXT_SECONDARY"])
         _bs_y    = y + (26 // 2) - _bs_surf.get_height() // 2 - 1  # vertically center with 26px dropdown
         screen.blit(_bs_surf, (cx + _PAD, _bs_y))
         # (dropdown drawn by ui.draw_ui below)
@@ -246,27 +248,27 @@ class StatsOverlay:
         best_time = s[time_key]
 
         value = "—" if score is None else str(score)
-        screen.blit(self._font_value.render(value, True, _TEXT_PRIMARY), (cx + _PAD, _bs_y + 14))
+        screen.blit(self._font_value.render(value, True, C["TEXT_PRIMARY"]), (cx + _PAD, _bs_y + 14))
 
         if score is not None and best_time is not None:
-            time_surf = self._font_value.render(f"  •  {int(best_time)}s", True, _TEXT_PRIMARY)
-            score_surf = self._font_value.render(value, True, _TEXT_PRIMARY)
+            time_surf  = self._font_value.render(f"  •  {int(best_time)}s", True, C["TEXT_PRIMARY"])
+            score_surf = self._font_value.render(value, True, C["TEXT_PRIMARY"])
             screen.blit(time_surf, (cx + _PAD + score_surf.get_width(), _bs_y + 14))
 
         if score is not None:
             sub_x    = cx + _PAD
             sub_y    = _bs_y + 38
             sub_text = f"Seed: {seed}"
-            sub_surf = self._font_label.render(sub_text, True, _TEXT_SECONDARY)
+            sub_surf = self._font_label.render(sub_text, True, C["TEXT_SECONDARY"])
             sr = pygame.Rect(sub_x - 2, sub_y - 2, sub_surf.get_width() + 4, sub_surf.get_height() + 4)
             self._seed_rect = sr
             if sr.collidepoint(mouse):
-                pygame.draw.rect(screen, (230, 228, 222), sr, border_radius=3)
+                pygame.draw.rect(screen, C["BTN_CLOSE_HOV"], sr, border_radius=3)
             screen.blit(sub_surf, (sub_x, sub_y))
 
         y += 68
 
-        btn_surf = self._font_btn.render("Full History", True, _TEXT_PRIMARY)
+        btn_surf = self._font_btn.render("Full History", True, C["TEXT_PRIMARY"])
         bp_x, bp_y = 12, 6
         bw = btn_surf.get_width()  + bp_x * 2
         bh = btn_surf.get_height() + bp_y * 2
@@ -274,8 +276,8 @@ class StatsOverlay:
         by = cy + _CARD_H - bh - 16
         self.history_btn_rect = pygame.Rect(bx, by, bw, bh)
         hov = self.history_btn_rect.collidepoint(mouse)
-        pygame.draw.rect(screen, (190, 188, 180) if hov else (210, 208, 200), self.history_btn_rect, border_radius=6)
-        pygame.draw.rect(screen, (160, 158, 150), self.history_btn_rect, width=1, border_radius=6)
+        pygame.draw.rect(screen, C["BTN_HOV"] if hov else C["BTN"], self.history_btn_rect, border_radius=6)
+        pygame.draw.rect(screen, C["BTN_BORDER"], self.history_btn_rect, width=1, border_radius=6)
         screen.blit(btn_surf, (bx + bp_x, by + bp_y))
 
         self._draw_copied_toast(screen, cx, cy, _CARD_W, _CARD_H)
@@ -283,21 +285,22 @@ class StatsOverlay:
     # ── history view ──────────────────────────────────────────────
 
     def _draw_history(self, screen):
+        C      = fruitbox_colors.C
         card_w, card_h = 520, 400
         cx, cy = self._draw_card(screen, card_w, card_h)
         mouse  = pygame.mouse.get_pos()
         pad    = 20
 
-        title = self._font_title.render("Full History", True, _TEXT_PRIMARY)
+        title = self._font_title.render("Full History", True, C["TEXT_PRIMARY"])
         screen.blit(title, (cx + (card_w - title.get_width()) // 2, cy + 18))
 
-        back_surf = self._font_btn.render("← Back", True, _TEXT_SECONDARY)
+        back_surf = self._font_btn.render("← Back", True, C["TEXT_SECONDARY"])
         bp_x, bp_y = 8, 6
         bw = back_surf.get_width()  + bp_x * 2
         bh = back_surf.get_height() + bp_y * 2
         self.back_btn_rect = pygame.Rect(cx + pad, cy + 16, bw, bh)
         if self.back_btn_rect.collidepoint(mouse):
-            pygame.draw.rect(screen, (230, 228, 222), self.back_btn_rect, border_radius=5)
+            pygame.draw.rect(screen, C["BTN_CLOSE_HOV"], self.back_btn_rect, border_radius=5)
         screen.blit(back_surf, (cx + pad + bp_x, cy + 16 + bp_y))
 
         header_y = cy + 56
@@ -309,12 +312,12 @@ class StatsOverlay:
             (cx + pad + 305, "SEED"),
         ]
         for x, label in cols:
-            screen.blit(self._font_label.render(label, True, _TEXT_SECONDARY), (x, header_y))
+            screen.blit(self._font_label.render(label, True, C["TEXT_SECONDARY"]), (x, header_y))
 
-        hint = self._font_label.render("Click row to copy seed", True, _TEXT_SECONDARY)
+        hint = self._font_label.render("Click row to copy seed", True, C["TEXT_SECONDARY"])
         screen.blit(hint, (cx + card_w - hint.get_width() - pad, header_y + 2))
 
-        pygame.draw.line(screen, _DIVIDER, (cx + pad, header_y + 18), (cx + card_w - pad, header_y + 18))
+        pygame.draw.line(screen, C["DIVIDER"], (cx + pad, header_y + 18), (cx + card_w - pad, header_y + 18))
 
         row_area_y = header_y + 24
         row_area_h = card_h - (row_area_y - cy) - pad
@@ -329,11 +332,11 @@ class StatsOverlay:
             row_rect = pygame.Rect(cx + pad, ry, card_w - pad * 2, self._row_h)
 
             if idx == self._selected_row:
-                bg = _ROW_SEL
+                bg = C["ROW_SEL"]
             elif row_rect.collidepoint(mouse):
-                bg = _ROW_HOV
+                bg = C["ROW_HOV"]
             elif i % 2 == 1:
-                bg = _ROW_ALT
+                bg = C["ROW_ALT"]
             else:
                 bg = None
 
@@ -346,11 +349,11 @@ class StatsOverlay:
             opp   = str(game["opp_score"]) if game["opp_score"] is not None else "—"
             seed  = str(game["seed"])
 
-            screen.blit(self._font_col.render(mode,  True, _TEXT_PRIMARY),   (cx + pad,       ry + 4))
-            screen.blit(self._font_col.render(grid,  True, _TEXT_PRIMARY),   (cx + pad + 90,  ry + 4))
-            screen.blit(self._font_col.render(score, True, _TEXT_PRIMARY),   (cx + pad + 175, ry + 4))
-            screen.blit(self._font_col.render(opp,   True, _TEXT_SECONDARY), (cx + pad + 240, ry + 4))
-            screen.blit(self._font_col.render(seed,  True, _TEXT_SECONDARY), (cx + pad + 305, ry + 4))
+            screen.blit(self._font_col.render(mode,  True, C["TEXT_PRIMARY"]),   (cx + pad,       ry + 4))
+            screen.blit(self._font_col.render(grid,  True, C["TEXT_PRIMARY"]),   (cx + pad + 90,  ry + 4))
+            screen.blit(self._font_col.render(score, True, C["TEXT_PRIMARY"]),   (cx + pad + 175, ry + 4))
+            screen.blit(self._font_col.render(opp,   True, C["TEXT_SECONDARY"]), (cx + pad + 240, ry + 4))
+            screen.blit(self._font_col.render(seed,  True, C["TEXT_SECONDARY"]), (cx + pad + 305, ry + 4))
 
         screen.set_clip(None)
 
@@ -359,8 +362,8 @@ class StatsOverlay:
             bar_h = max(20, int(row_area_h * self._visible_rows / total))
             bar_y = row_area_y + int((row_area_h - bar_h) * self._scroll / max(1, total - self._visible_rows))
             bar_x = cx + card_w - pad + 4
-            pygame.draw.rect(screen, _CELL_BORDER,    (bar_x, row_area_y, 4, row_area_h), border_radius=2)
-            pygame.draw.rect(screen, _TEXT_SECONDARY, (bar_x, bar_y,      4, bar_h),      border_radius=2)
+            pygame.draw.rect(screen, C["CELL_BORDER"],    (bar_x, row_area_y, 4, row_area_h), border_radius=2)
+            pygame.draw.rect(screen, C["TEXT_SECONDARY"], (bar_x, bar_y,      4, bar_h),      border_radius=2)
 
         self._draw_copied_toast(screen, cx, cy, card_w, card_h)
 

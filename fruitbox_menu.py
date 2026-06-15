@@ -2,6 +2,7 @@ import os
 import sys
 import pygame
 import pygame_gui
+import fruitbox_colors
 
 from fruitbox_game import FruitBoxGame
 from fruitbox_settings import SettingsOverlay
@@ -10,8 +11,7 @@ from fruitbox_help import HelpOverlay
 from fruitbox_pygame import (
     FruitBoxPygame,
     WIN_W as GAME_W, WIN_H as GAME_H,
-    BG, TEXT_PRIMARY, TEXT_SECONDARY,
-    _THEME, _ASSETS,
+    get_theme, _ASSETS,
 )
 
 MENU_W = GAME_W
@@ -42,23 +42,29 @@ class FruitBoxMenu:
         self.font_label  = pygame.font.SysFont("Arial", 15)
         self.font_btn    = pygame.font.SysFont("Arial", 13)
 
-        _raw = pygame.image.load(os.path.join(_ASSETS, "arrowtriangle.left.fill.png")).convert_alpha()
-        self._icon_arr_l = pygame.transform.smoothscale(_raw, (32, 32))
-        _raw = pygame.image.load(os.path.join(_ASSETS, "arrowtriangle.right.fill.png")).convert_alpha()
-        self._icon_arr_r = pygame.transform.smoothscale(_raw, (32, 32))
-
         self.grid_type_idx    = 0
         self.left_arrow_rect  = pygame.Rect(0, 0, 0, 0)
         self.right_arrow_rect = pygame.Rect(0, 0, 0, 0)
+        self.watch_btn_rect   = pygame.Rect(MENU_W - 60, MENU_H - 30, 60, 30)
 
         self.settings       = SettingsOverlay()
         self.stats_overlay  = StatsOverlay()
         self.help_overlay   = HelpOverlay()
 
-        # ── pygame_gui ────────────────────────────────────────────
-        self.ui = pygame_gui.UIManager((MENU_W, MENU_H), _THEME)
+        self._build_ui()
 
-        # Mode card buttons (side by side, centred)
+    def _build_ui(self):
+        icon_sz = 32 - 6  # 26
+
+        self._icon_arr_l    = fruitbox_colors.load_icon(os.path.join(_ASSETS, "arrowtriangle.left.fill.png"), 32)
+        self._icon_arr_r    = fruitbox_colors.load_icon(os.path.join(_ASSETS, "arrowtriangle.right.fill.png"), 32)
+        self._icon_settings = fruitbox_colors.load_icon(os.path.join(_ASSETS, "gearshape.png"), icon_sz)
+        self._icon_stats    = fruitbox_colors.load_icon(os.path.join(_ASSETS, "waveform.path.ecg.png"), icon_sz)
+        self._icon_help     = fruitbox_colors.load_icon(os.path.join(_ASSETS, "questionmark.circle.png"), icon_sz)
+        self._icon_dm       = fruitbox_colors.load_icon(os.path.join(_ASSETS, "circle.lefthalf.fill.png"), icon_sz)
+
+        self.ui = pygame_gui.UIManager((MENU_W, MENU_H), get_theme())
+
         card_gap = 24
         cards_x  = (MENU_W - _CARD_W * 2 - card_gap) // 2
 
@@ -75,40 +81,28 @@ class FruitBoxMenu:
             object_id="#card_btn",
         )
 
-        # Top-right icon buttons (Settings, Stats, Help), all square
         s_h   = 32
         s_x   = MENU_W - s_h - 14
-        st_x  = s_x  - s_h - 8
-        hlp_x = st_x - s_h - 8
-
-        _raw = pygame.image.load(os.path.join(_ASSETS, "gearshape.png")).convert_alpha()
-        self._icon_settings = pygame.transform.smoothscale(_raw, (s_h - 6, s_h - 6))
-        _raw = pygame.image.load(os.path.join(_ASSETS, "waveform.path.ecg.png")).convert_alpha()
-        self._icon_stats    = pygame.transform.smoothscale(_raw, (s_h - 6, s_h - 6))
-        _raw = pygame.image.load(os.path.join(_ASSETS, "questionmark.circle.png")).convert_alpha()
-        self._icon_help     = pygame.transform.smoothscale(_raw, (s_h - 6, s_h - 6))
+        st_x  = s_x   - s_h - 8
+        hlp_x = st_x  - s_h - 8
+        dm_x  = hlp_x - s_h - 8
 
         self.settings_btn = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(s_x, _TOP_BTN_Y, s_h, s_h),
-            text="",
-            manager=self.ui,
-            object_id="#top_btn",
+            text="", manager=self.ui, object_id="#top_btn",
         )
         self.stats_btn = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(st_x, _TOP_BTN_Y, s_h, s_h),
-            text="",
-            manager=self.ui,
-            object_id="#top_btn",
+            text="", manager=self.ui, object_id="#top_btn",
         )
         self.help_btn = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(hlp_x, _TOP_BTN_Y, s_h, s_h),
-            text="",
-            manager=self.ui,
-            object_id="#top_btn",
+            text="", manager=self.ui, object_id="#top_btn",
         )
-
-        # Hidden watch-AI button (bottom-right corner, small)
-        self.watch_btn_rect = pygame.Rect(MENU_W - 60, MENU_H - 30, 60, 30)
+        self.dm_btn = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(dm_x, _TOP_BTN_Y, s_h, s_h),
+            text="", manager=self.ui, object_id="#top_btn",
+        )
 
     @property
     def grid_type(self):
@@ -117,16 +111,17 @@ class FruitBoxMenu:
     # ── drawing ───────────────────────────────────────────────────
 
     def _draw(self, dt):
-        self.screen.fill(BG)
+        C = fruitbox_colors.C
+        self.screen.fill(C["BG"])
 
         # title
-        title = self.font_title.render("Fruit Box", True, TEXT_PRIMARY)
+        title = self.font_title.render("Fruit Box", True, C["TEXT_PRIMARY"])
         self.screen.blit(title, ((MENU_W - title.get_width()) // 2, 100))
 
         # grid type selector
         gt_cy = _CARD_Y + _CARD_H + 60
 
-        pill_surf  = self.font_toggle.render(self.grid_type.capitalize(), True, ACCENT)
+        pill_surf  = self.font_toggle.render(self.grid_type.capitalize(), True, C["ACCENT"])
         pill_pad_x, pill_pad_y = 28, 12
         pill_w = max(pill_surf.get_width() + pill_pad_x * 2, 180)
         pill_h = pill_surf.get_height() + pill_pad_y * 2
@@ -142,8 +137,8 @@ class FruitBoxMenu:
         x += arr_click_w + spacing
 
         pill_rect = pygame.Rect(x, gt_cy - pill_h // 2, pill_w, pill_h)
-        pygame.draw.rect(self.screen, (220, 235, 255), pill_rect, border_radius=20)
-        pygame.draw.rect(self.screen, ACCENT, pill_rect, width=2, border_radius=20)
+        pygame.draw.rect(self.screen, C["PILL_BG"], pill_rect, border_radius=20)
+        pygame.draw.rect(self.screen, C["PILL_BORDER"], pill_rect, width=2, border_radius=20)
         self.screen.blit(pill_surf, (
             x + (pill_w - pill_surf.get_width())  // 2,
             gt_cy - pill_surf.get_height() // 2,
@@ -154,11 +149,11 @@ class FruitBoxMenu:
         self.screen.blit(self._icon_arr_r, self._icon_arr_r.get_rect(center=(x + arr_click_w // 2, gt_cy)))
 
         # bottom hint
-        hint = self.font_hint.render("Press ESC during a game to return here", True, TEXT_SECONDARY)
+        hint = self.font_hint.render("Press ESC during a game to return here", True, C["TEXT_SECONDARY"])
         self.screen.blit(hint, ((MENU_W - hint.get_width()) // 2, MENU_H - 26))
 
         overlay_open = self.settings.visible or self.stats_overlay.visible or self.help_overlay.visible
-        for btn in (self.sp_btn, self.vs_btn, self.settings_btn, self.stats_btn, self.help_btn):
+        for btn in (self.sp_btn, self.vs_btn, self.settings_btn, self.stats_btn, self.help_btn, self.dm_btn):
             if overlay_open and btn.is_enabled:
                 btn.disable()
             elif not overlay_open and not btn.is_enabled:
@@ -173,6 +168,8 @@ class FruitBoxMenu:
         self.screen.blit(self._icon_stats, self._icon_stats.get_rect(center=btn_r.center))
         btn_r = self.help_btn.get_abs_rect()
         self.screen.blit(self._icon_help, self._icon_help.get_rect(center=btn_r.center))
+        btn_r = self.dm_btn.get_abs_rect()
+        self.screen.blit(self._icon_dm, self._icon_dm.get_rect(center=btn_r.center))
 
         # Overlays drawn after ui.draw_ui so they appear on top of the card buttons
         self.settings.draw(self.screen)
@@ -214,6 +211,10 @@ class FruitBoxMenu:
                         self.stats_overlay.toggle()
                     if event.ui_element == self.help_btn:
                         self.help_overlay.toggle()
+                    if event.ui_element == self.dm_btn:
+                        fruitbox_colors.set_dark(not fruitbox_colors.is_dark())
+                        self.stats_overlay.reload_theme()
+                        self._build_ui()
 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if self.left_arrow_rect.collidepoint(event.pos):
@@ -260,9 +261,10 @@ class FruitBoxMenu:
             self.screen = pygame.display.set_mode((MENU_W, MENU_H))
 
         elif mode == "vs_ai":
+            C = fruitbox_colors.C
             loading_surf = pygame.font.SysFont("Arial", 21, bold=True).render(
-                "Loading model…", True, TEXT_SECONDARY)
-            self.screen.fill(BG)
+                "Loading model…", True, C["TEXT_SECONDARY"])
+            self.screen.fill(C["BG"])
             self.screen.blit(loading_surf, (
                 (MENU_W - loading_surf.get_width())  // 2,
                 (MENU_H - loading_surf.get_height()) // 2,
@@ -271,7 +273,7 @@ class FruitBoxMenu:
 
             from fruitbox_vs import FruitBoxVs, WIN_W as VS_W, WIN_H as VS_H
             screen = self._resize_keep_top(VS_W, VS_H)
-            screen.fill(BG)
+            screen.fill(C["BG"])
             screen.blit(loading_surf, (
                 (VS_W - loading_surf.get_width())  // 2,
                 (VS_H - loading_surf.get_height()) // 2,
@@ -281,9 +283,10 @@ class FruitBoxMenu:
             self.screen = self._resize_keep_top(MENU_W, MENU_H)
 
         elif mode == "watch_ai":
+            C = fruitbox_colors.C
             loading_surf = pygame.font.SysFont("Arial", 21, bold=True).render(
-                "Loading model…", True, TEXT_SECONDARY)
-            self.screen.fill(BG)
+                "Loading model…", True, C["TEXT_SECONDARY"])
+            self.screen.fill(C["BG"])
             self.screen.blit(loading_surf, (
                 (MENU_W - loading_surf.get_width())  // 2,
                 (MENU_H - loading_surf.get_height()) // 2,
@@ -292,7 +295,7 @@ class FruitBoxMenu:
 
             from fruitbox_ai_watch import FruitBoxAiWatch
             screen = pygame.display.set_mode((GAME_W, GAME_H))
-            screen.fill(BG)
+            screen.fill(C["BG"])
             screen.blit(loading_surf, (
                 (GAME_W - loading_surf.get_width())  // 2,
                 (GAME_H - loading_surf.get_height()) // 2,

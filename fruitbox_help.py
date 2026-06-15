@@ -1,9 +1,5 @@
 import pygame
-
-_TEXT_PRIMARY   = (44,  44,  42)
-_TEXT_SECONDARY = (95,  94,  90)
-_CELL_BORDER    = (210, 208, 200)
-_DIVIDER        = (220, 218, 210)
+import fruitbox_colors
 
 _SECTIONS = [
     ("How to play:", [
@@ -75,30 +71,31 @@ class HelpOverlay:
         if not self.visible:
             return
         self._ensure_fonts()
+        C     = fruitbox_colors.C
         w, h  = screen.get_size()
         mouse = pygame.mouse.get_pos()
 
         dim = pygame.Surface((w, h), pygame.SRCALPHA)
-        dim.fill((44, 44, 42, 160))
+        dim.fill(C["DIM"])
         screen.blit(dim, (0, 0))
 
         card_w, card_h = 440, 320
         cx = (w - card_w) // 2
         cy = (h - card_h) // 2
         self._card_rect = pygame.Rect(cx, cy, card_w, card_h)
-        pygame.draw.rect(screen, (255, 255, 255), self._card_rect, border_radius=14)
-        pygame.draw.rect(screen, _CELL_BORDER, self._card_rect, width=1, border_radius=14)
+        pygame.draw.rect(screen, C["CARD_BG"], self._card_rect, border_radius=14)
+        pygame.draw.rect(screen, C["CARD_BORDER"], self._card_rect, width=1, border_radius=14)
 
-        title = self._font_title.render("Help", True, _TEXT_PRIMARY)
+        title = self._font_title.render("Help", True, C["TEXT_PRIMARY"])
         screen.blit(title, (cx + (card_w - title.get_width()) // 2, cy + 22))
 
-        x_surf = self._font_btn.render("X", True, _TEXT_SECONDARY)
+        x_surf = self._font_btn.render("X", True, C["TEXT_SECONDARY"])
         x_pad  = 6
         x_w    = x_surf.get_width()  + x_pad * 2
         x_h    = x_surf.get_height() + x_pad * 2
         self.close_rect = pygame.Rect(cx + card_w - x_w - 8, cy + 8, x_w, x_h)
         if self.close_rect.collidepoint(mouse):
-            pygame.draw.rect(screen, (230, 228, 222), self.close_rect, border_radius=5)
+            pygame.draw.rect(screen, C["BTN_CLOSE_HOV"], self.close_rect, border_radius=5)
         screen.blit(x_surf, (self.close_rect.x + x_pad, self.close_rect.y + x_pad))
 
         pad      = 32
@@ -106,13 +103,13 @@ class HelpOverlay:
         y        = cy + 68
         line_h   = self._font_body.get_linesize()
 
-        pygame.draw.line(screen, _DIVIDER, (cx + pad, y - 12), (cx + card_w - pad, y - 12))
+        pygame.draw.line(screen, C["DIVIDER"], (cx + pad, y - 12), (cx + card_w - pad, y - 12))
 
         for header, lines in _SECTIONS:
-            screen.blit(self._font_header.render(header, True, _TEXT_PRIMARY), (cx + pad, y))
+            screen.blit(self._font_header.render(header, True, C["TEXT_PRIMARY"]), (cx + pad, y))
             y += line_h + 2
             for para in lines:
                 for wrapped_line in _wrap(self._font_body, para, text_w):
-                    screen.blit(self._font_body.render(wrapped_line, True, _TEXT_SECONDARY), (cx + pad, y))
+                    screen.blit(self._font_body.render(wrapped_line, True, C["TEXT_SECONDARY"]), (cx + pad, y))
                     y += line_h
             y += 10

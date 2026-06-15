@@ -7,6 +7,7 @@ _PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json"
 _DEFAULTS: dict[str, int] = {
     "key_pause":   pygame.K_SPACE,
     "key_restart": pygame.K_r,
+    "dark_mode":   1,
 }
 
 _cfg: dict[str, int] = {}

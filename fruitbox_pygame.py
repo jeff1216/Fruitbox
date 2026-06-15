@@ -5,6 +5,7 @@ import time
 import os
 import fruitbox_stats
 import fruitbox_config
+import fruitbox_colors
 from fruitbox_game import FruitBoxGame
 
 # ── layout constants ──────────────────────────────────────────────
@@ -44,9 +45,14 @@ BTN_COLOR        = (210, 208, 200)
 BTN_HOVER_COLOR  = (190, 188, 180)
 BTN_BORDER_COLOR = (160, 158, 150)
 
-_BASE_DIR = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-_THEME    = os.path.join(_BASE_DIR, "theme.json")
-_ASSETS   = os.path.join(_BASE_DIR, "assets")
+_BASE_DIR   = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+_THEME      = os.path.join(_BASE_DIR, "theme.json")
+_THEME_DARK = os.path.join(_BASE_DIR, "theme_dark.json")
+_ASSETS     = os.path.join(_BASE_DIR, "assets")
+
+
+def get_theme():
+    return _THEME_DARK if fruitbox_colors.is_dark() else _THEME
 
 # HUD button layout
 _BTN_H  = 34
@@ -103,15 +109,12 @@ class FruitBoxPygame:
         self.overlay = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
 
         # ── pygame_gui ────────────────────────────────────────────
-        self.ui = pygame_gui.UIManager((WIN_W, WIN_H), _THEME)
+        self.ui = pygame_gui.UIManager((WIN_W, WIN_H), get_theme())
 
         _icon_sz = _BTN_H - 8
-        _raw = pygame.image.load(os.path.join(_ASSETS, "pause.circle.png")).convert_alpha()
-        self._icon_pause   = pygame.transform.smoothscale(_raw, (_icon_sz, _icon_sz))
-        _raw = pygame.image.load(os.path.join(_ASSETS, "play.circle.png")).convert_alpha()
-        self._icon_play    = pygame.transform.smoothscale(_raw, (_icon_sz, _icon_sz))
-        _raw = pygame.image.load(os.path.join(_ASSETS, "arrow.counterclockwise.circle.png")).convert_alpha()
-        self._icon_restart = pygame.transform.smoothscale(_raw, (_icon_sz, _icon_sz))
+        self._icon_pause   = fruitbox_colors.load_icon(os.path.join(_ASSETS, "pause.circle.png"), _icon_sz)
+        self._icon_play    = fruitbox_colors.load_icon(os.path.join(_ASSETS, "play.circle.png"), _icon_sz)
+        self._icon_restart = fruitbox_colors.load_icon(os.path.join(_ASSETS, "arrow.counterclockwise.circle.png"), _icon_sz)
 
         bx = _BTN_X0
         self.menu_btn = pygame_gui.elements.UIButton(
@@ -158,27 +161,29 @@ class FruitBoxPygame:
     # ── drawing ───────────────────────────────────────────────────
 
     def draw_hud(self):
-        pygame.draw.rect(self.screen, (235, 233, 226), (0, 0, WIN_W, HUD_H))
-        pygame.draw.line(self.screen, CELL_BORDER, (0, HUD_H), (WIN_W, HUD_H), 1)
+        C = fruitbox_colors.C
+        pygame.draw.rect(self.screen, C["HUD_BG"], (0, 0, WIN_W, HUD_H))
+        pygame.draw.line(self.screen, C["CELL_BORDER"], (0, HUD_H), (WIN_W, HUD_H), 1)
 
-        self.screen.blit(self.font_label.render("SCORE", True, TEXT_SECONDARY), (PADDING, 12))
-        self.screen.blit(self.font_score.render(str(self.game.score), True, TEXT_PRIMARY), (PADDING, 28))
+        self.screen.blit(self.font_label.render("SCORE", True, C["TEXT_SECONDARY"]), (PADDING, 12))
+        self.screen.blit(self.font_score.render(str(self.game.score), True, C["TEXT_PRIMARY"]), (PADDING, 28))
 
         t    = self.game.time_remaining
-        tcol = TIMER_OK if t > 30 else (TIMER_WARN if t > 10 else TIMER_DANGER)
+        tcol = C["TIMER_OK"] if t > 30 else (C["TIMER_WARN"] if t > 10 else C["TIMER_DANGER"])
 
         bar_w  = 180
         bar_x  = WIN_W - PADDING - bar_w
         bar_y  = 48
         bar_h  = 6
         fill_w = int(bar_w * (t / self.game.time_limit))
-        pygame.draw.rect(self.screen, CELL_BORDER, (bar_x, bar_y, bar_w, bar_h), border_radius=3)
-        pygame.draw.rect(self.screen, tcol,        (bar_x, bar_y, fill_w, bar_h), border_radius=3)
+        pygame.draw.rect(self.screen, C["CELL_BORDER"], (bar_x, bar_y, bar_w, bar_h), border_radius=3)
+        pygame.draw.rect(self.screen, tcol,             (bar_x, bar_y, fill_w, bar_h), border_radius=3)
 
-        self.screen.blit(self.font_label.render("TIME", True, TEXT_SECONDARY), (bar_x, 12))
-        self.screen.blit(self.font_score.render(f"{int(t):d}s", True, tcol),   (bar_x, 28))
+        self.screen.blit(self.font_label.render("TIME", True, C["TEXT_SECONDARY"]), (bar_x, 12))
+        self.screen.blit(self.font_score.render(f"{int(t):d}s", True, tcol),        (bar_x, 28))
 
     def draw_grid(self):
+        C      = fruitbox_colors.C
         bounds = self.selection_bounds()
 
         for row in range(ROWS):
@@ -187,11 +192,11 @@ class FruitBoxPygame:
                 val     = self.game.grid[row][col]
                 cleared = (val == -1)
 
-                draw_rounded_rect(self.screen, CLEARED_BG if cleared else CELL_BG, rect, radius=6)
-                draw_rounded_rect_border(self.screen, CELL_BORDER, rect, width=1, radius=6)
+                draw_rounded_rect(self.screen, C["CLEARED_BG"] if cleared else C["CELL_BG"], rect, radius=6)
+                draw_rounded_rect_border(self.screen, C["CELL_BORDER"], rect, width=1, radius=6)
 
                 if not cleared:
-                    num_surf = self.font_num.render(str(val), True, TEXT_PRIMARY)
+                    num_surf = self.font_num.render(str(val), True, C["TEXT_PRIMARY"])
                     self.screen.blit(num_surf, (
                         rect.x + (CELL - 1 - num_surf.get_width())  // 2,
                         rect.y + (CELL - 1 - num_surf.get_height()) // 2,
@@ -204,19 +209,20 @@ class FruitBoxPygame:
             br  = self.cell_rect(r2, c2)
             sel = pygame.Rect(tl.x, tl.y, br.right - tl.x, br.bottom - tl.y)
             self.overlay.fill((0, 0, 0, 0))
-            pygame.draw.rect(self.overlay, VALID_FILL if self.sel_valid else SEL_FILL, sel, border_radius=8)
+            pygame.draw.rect(self.overlay, C["VALID_FILL"] if self.sel_valid else C["SEL_FILL"], sel, border_radius=8)
             self.screen.blit(self.overlay, (0, 0))
-            pygame.draw.rect(self.screen, VALID_BOR if self.sel_valid else SEL_BORDER, sel, width=2, border_radius=8)
+            pygame.draw.rect(self.screen, C["VALID_BOR"] if self.sel_valid else C["SEL_BORDER"], sel, width=2, border_radius=8)
 
     def draw_paused(self):
+        C         = fruitbox_colors.C
         alpha     = int(self._pause_alpha)
         grid_rect = pygame.Rect(PADDING, HUD_H + PADDING, COLS * CELL, ROWS * CELL)
         bg = pygame.Surface((grid_rect.width, grid_rect.height))
-        bg.fill((180, 178, 170))
+        bg.fill(C["PAUSE_COVER"])
         bg.set_alpha(alpha)
         self.screen.blit(bg, (grid_rect.x, grid_rect.y))
         font_p = pygame.font.SysFont("Arial", 36, bold=True)
-        surf   = font_p.render("Paused", True, TEXT_PRIMARY)
+        surf   = font_p.render("Paused", True, C["TEXT_PRIMARY"])
         surf.set_alpha(alpha)
         self.screen.blit(surf, (
             grid_rect.x + (grid_rect.width  - surf.get_width())  // 2,
@@ -224,8 +230,9 @@ class FruitBoxPygame:
         ))
 
     def draw_game_over(self):
+        C = fruitbox_colors.C
         dim = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
-        dim.fill((44, 44, 42, 160))
+        dim.fill(C["DIM"])
         self.screen.blit(dim, (0, 0))
 
         card_w, card_h = 340, 210
@@ -233,37 +240,37 @@ class FruitBoxPygame:
         card_y = (WIN_H - card_h) // 2
         card   = pygame.Rect(card_x, card_y, card_w, card_h)
         self._game_over_card_rect = card
-        draw_rounded_rect(self.screen, (255, 255, 255), card, radius=14)
-        draw_rounded_rect_border(self.screen, CELL_BORDER, card, width=1, radius=14)
+        draw_rounded_rect(self.screen, C["CARD_BG"], card, radius=14)
+        draw_rounded_rect_border(self.screen, C["CARD_BORDER"], card, width=1, radius=14)
 
-        self.screen.blit(self.font_over.render("Game over", True, TEXT_PRIMARY),
+        self.screen.blit(self.font_over.render("Game over", True, C["TEXT_PRIMARY"]),
                          (card_x + (card_w - self.font_over.size("Game over")[0]) // 2, card_y + 28))
-        self.screen.blit(self.font_over_sub.render(self.over_reason, True, TEXT_SECONDARY),
+        self.screen.blit(self.font_over_sub.render(self.over_reason, True, C["TEXT_SECONDARY"]),
                          (card_x + (card_w - self.font_over_sub.size(self.over_reason)[0]) // 2, card_y + 78))
         score_text = f"Final score: {self.game.score}"
-        self.screen.blit(self.font_score.render(score_text, True, TEXT_PRIMARY),
+        self.screen.blit(self.font_score.render(score_text, True, C["TEXT_PRIMARY"]),
                          (card_x + (card_w - self.font_score.size(score_text)[0]) // 2, card_y + 110))
 
         font_btn = pygame.font.SysFont("Arial", 13, bold=True)
         mouse    = pygame.mouse.get_pos()
 
-        r_surf = font_btn.render("Restart", True, TEXT_PRIMARY)
+        r_surf = font_btn.render("Restart", True, C["TEXT_PRIMARY"])
         r_px, r_py = 20, 8
         r_w = r_surf.get_width()  + r_px * 2
         r_h = r_surf.get_height() + r_py * 2
         self._restart_over_rect = pygame.Rect(card_x + (card_w - r_w) // 2, card_y + 156, r_w, r_h)
         r_hov = self._restart_over_rect.collidepoint(mouse)
-        pygame.draw.rect(self.screen, (190, 188, 180) if r_hov else (210, 208, 200), self._restart_over_rect, border_radius=6)
-        pygame.draw.rect(self.screen, (160, 158, 150), self._restart_over_rect, width=1, border_radius=6)
+        pygame.draw.rect(self.screen, C["BTN_HOV"] if r_hov else C["BTN"], self._restart_over_rect, border_radius=6)
+        pygame.draw.rect(self.screen, C["BTN_BORDER"], self._restart_over_rect, width=1, border_radius=6)
         self.screen.blit(r_surf, (self._restart_over_rect.x + r_px, self._restart_over_rect.y + r_py))
 
-        x_surf = font_btn.render("X", True, TEXT_SECONDARY)
+        x_surf = font_btn.render("X", True, C["TEXT_SECONDARY"])
         x_pad  = 6
         x_w    = x_surf.get_width()  + x_pad * 2
         x_h    = x_surf.get_height() + x_pad * 2
         self.close_over_rect = pygame.Rect(card_x + card_w - x_w - 8, card_y + 8, x_w, x_h)
         if self.close_over_rect.collidepoint(mouse):
-            pygame.draw.rect(self.screen, (230, 228, 222), self.close_over_rect, border_radius=5)
+            pygame.draw.rect(self.screen, C["BTN_CLOSE_HOV"], self.close_over_rect, border_radius=5)
         self.screen.blit(x_surf, (self.close_over_rect.x + x_pad, self.close_over_rect.y + x_pad))
 
     # ── state ─────────────────────────────────────────────────────
@@ -376,7 +383,7 @@ class FruitBoxPygame:
             else:
                 self._pause_alpha = 0.0
 
-            self.screen.fill(BG)
+            self.screen.fill(fruitbox_colors.C["BG"])
             self.draw_hud()
             self.draw_grid()
             if self.game.paused:
