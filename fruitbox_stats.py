@@ -70,25 +70,27 @@ def get_summary():
             FROM game_history WHERE gamemode = 'vs_ai'
         """).fetchone()
         random_best = conn.execute("""
-            SELECT self_score, seed FROM game_history
+            SELECT self_score, seed, time_elapsed FROM game_history
             WHERE grid_type = 'random' AND gamemode IN ('single_player', 'vs_ai')
-            ORDER BY self_score DESC LIMIT 1
+            ORDER BY self_score DESC, time_elapsed ASC LIMIT 1
         """).fetchone()
         solvable_best = conn.execute("""
-            SELECT self_score, seed FROM game_history
+            SELECT self_score, seed, time_elapsed FROM game_history
             WHERE grid_type = 'solvable' AND gamemode IN ('single_player', 'vs_ai')
-            ORDER BY self_score DESC LIMIT 1
+            ORDER BY self_score DESC, time_elapsed ASC LIMIT 1
         """).fetchone()
     return {
-        "total_games":       totals["total_games"],
-        "total_time":        int(totals["total_time"]),
-        "vs_wins":           vs["wins"],
-        "vs_losses":         vs["losses"],
-        "vs_ties":           vs["ties"],
-        "random_best":       random_best["self_score"] if random_best else None,
-        "random_best_seed":  random_best["seed"]       if random_best else None,
-        "solvable_best":     solvable_best["self_score"] if solvable_best else None,
-        "solvable_best_seed":solvable_best["seed"]       if solvable_best else None,
+        "total_games":        totals["total_games"],
+        "total_time":         int(totals["total_time"]),
+        "vs_wins":            vs["wins"],
+        "vs_losses":          vs["losses"],
+        "vs_ties":            vs["ties"],
+        "random_best":        random_best["self_score"]    if random_best else None,
+        "random_best_seed":   random_best["seed"]          if random_best else None,
+        "random_best_time":   random_best["time_elapsed"]  if random_best else None,
+        "solvable_best":      solvable_best["self_score"]  if solvable_best else None,
+        "solvable_best_seed": solvable_best["seed"]        if solvable_best else None,
+        "solvable_best_time": solvable_best["time_elapsed"] if solvable_best else None,
     }
 
 

@@ -240,16 +240,24 @@ class StatsOverlay:
 
         score_key = f"{self._grid_filter}_best"
         seed_key  = f"{self._grid_filter}_best_seed"
+        time_key  = f"{self._grid_filter}_best_time"
         score     = s[score_key]
         seed      = s[seed_key]
+        best_time = s[time_key]
 
         value = "—" if score is None else str(score)
         screen.blit(self._font_value.render(value, True, _TEXT_PRIMARY), (cx + _PAD, _bs_y + 14))
 
+        if score is not None and best_time is not None:
+            time_surf = self._font_value.render(f"  •  {int(best_time)}s", True, _TEXT_PRIMARY)
+            score_surf = self._font_value.render(value, True, _TEXT_PRIMARY)
+            screen.blit(time_surf, (cx + _PAD + score_surf.get_width(), _bs_y + 14))
+
         if score is not None:
             sub_x    = cx + _PAD
             sub_y    = _bs_y + 38
-            sub_surf = self._font_label.render(f"Seed: {seed}", True, _TEXT_SECONDARY)
+            sub_text = f"Seed: {seed}"
+            sub_surf = self._font_label.render(sub_text, True, _TEXT_SECONDARY)
             sr = pygame.Rect(sub_x - 2, sub_y - 2, sub_surf.get_width() + 4, sub_surf.get_height() + 4)
             self._seed_rect = sr
             if sr.collidepoint(mouse):
