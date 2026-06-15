@@ -328,9 +328,7 @@ class FruitBoxPygame:
 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if self.game_over and self.show_game_over:
-                        if not self._game_over_card_rect.collidepoint(event.pos):
-                            self.show_game_over = False
-                        elif self.close_over_rect.collidepoint(event.pos):
+                        if self.close_over_rect.collidepoint(event.pos):
                             self.show_game_over = False
                         elif self._restart_over_rect.collidepoint(event.pos):
                             self.restart()
