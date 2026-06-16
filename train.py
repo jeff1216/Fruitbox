@@ -1,5 +1,6 @@
 import os
 import argparse
+import torch
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecMonitor
 from stable_baselines3.common.callbacks import CheckpointCallback
@@ -45,6 +46,8 @@ if __name__ == "__main__":
     if args.watch:
         callbacks.append(WatchCallback(render_freq=1000, step_delay=0.4))
 
+    print(f"Device: {'cuda (' + torch.cuda.get_device_name(0) + ')' if torch.cuda.is_available() else 'cpu'}")
+
     if NEW:
         model = MaskablePPO(
             "MultiInputPolicy",
@@ -59,9 +62,10 @@ if __name__ == "__main__":
             ent_coef=0.02,
             verbose=1,
             policy_kwargs=dict(net_arch=[512, 512]),
+            device="auto",
         )
     else:
-        model = MaskablePPO.load(MODEL_PATH, env=vec_env)
+        model = MaskablePPO.load(MODEL_PATH, env=vec_env, device="auto")
     model.learn(total_timesteps=n_steps * n_envs, callback=callbacks, progress_bar=True)
     model.save("fruitbox_ppo_final")
     print("Training complete.")
