@@ -72,7 +72,7 @@ jobs:
 
       - name: Build executable
         run: |
-          python -m PyInstaller --onefile --windowed --name FruitBox `
+          uv run python -m PyInstaller --onefile --windowed --name FruitBox `
             --add-data "fruitbox_ppo_final.zip;." `
             --add-data "src/fruitbox/assets;assets" `
             --collect-data pygame_gui `
@@ -80,7 +80,7 @@ jobs:
             --collect-data sb3_contrib `
             --add-binary "C:\Windows\System32\VCRUNTIME140.dll;." `
             --add-binary "C:\Windows\System32\VCRUNTIME140_1.dll;." `
-            src/fruitbox/menu.py
+            src/fruitbox/__main__.py
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4

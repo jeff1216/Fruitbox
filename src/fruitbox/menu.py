@@ -565,7 +565,7 @@ class FruitBoxMenu:
             ))
             pygame.display.flip()
 
-            from fruitbox_vs import FruitBoxVs, WIN_W as VS_W, WIN_H as VS_H
+            from .vs import FruitBoxVs, WIN_W as VS_W, WIN_H as VS_H
             screen = self._resize_keep_top(VS_W, VS_H)
             screen.fill(C["BG"])
             screen.blit(loading_surf, (
@@ -588,7 +588,7 @@ class FruitBoxMenu:
             ))
             pygame.display.flip()
 
-            from fruitbox_ai_watch import FruitBoxAiWatch
+            from .ai_watch import FruitBoxAiWatch
             screen = pygame.display.set_mode((GAME_W, GAME_H))
             screen.fill(C["BG"])
             screen.blit(loading_surf, (
