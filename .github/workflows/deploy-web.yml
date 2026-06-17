@@ -28,14 +28,11 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
       - name: Install pygbag
-        run: uv pip install pygbag
+        run: pip install pygbag
 
       - name: Build with pygbag
-        run: uv run python tools/build_web.py
+        run: python tools/build_web.py
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
