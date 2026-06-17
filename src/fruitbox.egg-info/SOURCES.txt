@@ -10,6 +10,7 @@ src/fruitbox/game.py
 src/fruitbox/grid.py
 src/fruitbox/help.py
 src/fruitbox/menu.py
+src/fruitbox/onnx_agent.py
 src/fruitbox/plot_training.py
 src/fruitbox/pygame_ui.py
 src/fruitbox/settings.py
@@ -26,3 +27,5 @@ src/fruitbox.egg-info/dependency_links.txt
 src/fruitbox.egg-info/entry_points.txt
 src/fruitbox.egg-info/requires.txt
 src/fruitbox.egg-info/top_level.txt
+src/fruitbox_web/__init__.py
+src/fruitbox_web/__main__.py

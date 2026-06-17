@@ -54,7 +54,7 @@ class FruitBoxAiWatch:
 
         self.ai_env = ActionMasker(FruitBoxEnv(grid_type=grid_type), mask_fn)
         self.game   = self.ai_env.env.game
-        self.model  = MaskablePPO.load(MODEL_PATH)
+        self.model  = self._create_model()
 
         self.overlay         = pygame.Surface((WIN_W, WIN_H), pygame.SRCALPHA)
         self.close_over_rect = pygame.Rect(0, 0, 0, 0)
@@ -89,6 +89,9 @@ class FruitBoxAiWatch:
         self.sel_start      = None
         self.sel_end        = None
         self.sel_clear_at   = 0
+
+    def _create_model(self):
+        return MaskablePPO.load(MODEL_PATH)
 
     # ── drawing ───────────────────────────────────────────────────
 
