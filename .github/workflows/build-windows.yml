@@ -31,9 +31,6 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Install dependencies
-        run: uv sync --extra cpu --group build --all-packages
-
       - name: Add venv to PATH
         shell: pwsh
         run: Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE\.venv\Scripts"
@@ -88,6 +85,23 @@ jobs:
           FRUITBOX_MODEL_MIRROR_URL: ${{ secrets.FRUITBOX_ONNX_MIRROR_URL }}
         run: python .github/scripts/download_hf_onnx.py
 
+      - name: Build fruitbox-onnx.exe
+        run: |
+          uv sync --package fruitbox-app-onnx --package fruitbox-pygame --package fruitbox-core --package fruitbox --group build
+          uv run --package fruitbox-app-onnx python -m PyInstaller --onefile --windowed --name fruitbox-onnx `
+            --add-data "fruitbox_policy.onnx;." `
+            --collect-data fruitbox_pygame `
+            --collect-data pygame_gui `
+            --add-binary "C:\Windows\System32\VCRUNTIME140.dll;." `
+            --add-binary "C:\Windows\System32\VCRUNTIME140_1.dll;." `
+            packages/fruitbox-app-onnx/src/fruitbox_app_onnx/__main__.py
+          python .github/scripts/check_exe_size.py dist/fruitbox-onnx.exe
+
+      - name: Verify CPU torch
+        run: |
+          uv sync --extra cpu --package fruitbox-app-torch --package fruitbox-pygame --package fruitbox-core --package fruitbox --group build
+          python .github/scripts/verify_torch_cpu.py
+
       - name: Build fruitbox.exe (PyTorch)
         run: |
           uv run --package fruitbox-app-torch --extra cpu python -m PyInstaller --onefile --windowed --name fruitbox `
@@ -99,16 +113,7 @@ jobs:
             --add-binary "C:\Windows\System32\VCRUNTIME140.dll;." `
             --add-binary "C:\Windows\System32\VCRUNTIME140_1.dll;." `
             packages/fruitbox-app-torch/src/fruitbox_app_torch/__main__.py
-
-      - name: Build fruitbox-onnx.exe
-        run: |
-          uv run --package fruitbox-app-onnx python -m PyInstaller --onefile --windowed --name fruitbox-onnx `
-            --add-data "fruitbox_policy.onnx;." `
-            --collect-data fruitbox_pygame `
-            --collect-data pygame_gui `
-            --add-binary "C:\Windows\System32\VCRUNTIME140.dll;." `
-            --add-binary "C:\Windows\System32\VCRUNTIME140_1.dll;." `
-            packages/fruitbox-app-onnx/src/fruitbox_app_onnx/__main__.py
+          python .github/scripts/check_exe_size.py dist/fruitbox.exe
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4

@@ -6,20 +6,17 @@ import math
 import pygame
 import pygame_gui
 
-try:
-    from sb3_contrib.common.wrappers import ActionMasker
-except ImportError:
-    class ActionMasker:
-        """Minimal shim used when sb3_contrib is unavailable (WASM build)."""
-        def __init__(self, env, mask_fn):
-            self.env = env
-            self._mask_fn = mask_fn
-        def action_masks(self):
-            return self._mask_fn(self.env)
-        def reset(self, **kwargs):
-            return self.env.reset(**kwargs)
-        def step(self, action):
-            return self.env.step(action)
+class ActionMasker:
+    """Minimal action-mask wrapper (no sb3/torch dependency)."""
+    def __init__(self, env, mask_fn):
+        self.env = env
+        self._mask_fn = mask_fn
+    def action_masks(self):
+        return self._mask_fn(self.env)
+    def reset(self, **kwargs):
+        return self.env.reset(**kwargs)
+    def step(self, action):
+        return self.env.step(action)
 
 from fruitbox_core.env import FruitBoxEnv
 from . import colors as fruitbox_colors
