@@ -35,6 +35,9 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
+      - name: Install build tools
+        run: uv sync --package fruitbox --group build
+
       - name: Add venv to PATH
         shell: pwsh
         run: Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE\.venv\Scripts"
