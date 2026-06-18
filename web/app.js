@@ -479,6 +479,7 @@ function startPlay(gridType, opts = {}) {
   playGrid = py('play_grid');
   playScore = 0; playTimeRemaining = playTimeLimit;
   playGameOver = false; playPaused = false;
+  $('play-pause-icon').src = './assets/pause.circle.png';
   playGameSeed = py('play_seed');
   playGameStart = performance.now();
   dragStart = null; dragEnd = null;
@@ -564,8 +565,8 @@ function setupPlayInput() {
 
   $('play-pause').onclick = () => {
     if (playGameOver) return;
-    if (playPaused) { py('play_resume'); playPaused = false; $('play-pause').textContent = '⏸'; lastTs = null; }
-    else            { py('play_pause');  playPaused = true;  $('play-pause').textContent = '▶'; }
+    if (playPaused) { py('play_resume'); playPaused = false; $('play-pause-icon').src = './assets/pause.circle.png'; lastTs = null; }
+    else            { py('play_pause');  playPaused = true;  $('play-pause-icon').src = './assets/play.circle.png'; }
   };
   $('play-restart').onclick = () => {
     cancelAnimationFrame(animId);
@@ -584,6 +585,7 @@ function startVs(gridType, seed = null) {
   vsAiGrid    = py('vs_ai_grid');
   vsHumanScore = 0; vsAiScore = 0; vsTimeRemaining = DEFAULT_TIME;
   vsHumanOver = false; vsAiOver = false; vsGameOver = false; vsPaused = false;
+  $('vs-pause-icon').src = './assets/pause.circle.png';
   vsGameSeed  = py('vs_seed');
   vsGameStart = performance.now();
   dragStart = null; dragEnd = null;
@@ -708,8 +710,8 @@ function setupVsInput() {
 
   $('vs-pause').onclick = () => {
     if (vsGameOver) return;
-    if (vsPaused) { py('vs_resume'); vsPaused = false; $('vs-pause').textContent = '⏸'; lastTs = null; }
-    else          { py('vs_pause');  vsPaused = true;  $('vs-pause').textContent = '▶'; }
+    if (vsPaused) { py('vs_resume'); vsPaused = false; $('vs-pause-icon').src = './assets/pause.circle.png'; lastTs = null; }
+    else          { py('vs_pause');  vsPaused = true;  $('vs-pause-icon').src = './assets/play.circle.png'; }
   };
   $('vs-restart').onclick  = () => {
     cancelAnimationFrame(animId);

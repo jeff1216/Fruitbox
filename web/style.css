@@ -147,6 +147,9 @@ html, body {
 /* Pill arrows are a bit bigger */
 .pill-arrow .icon-img { width: 22px; height: 22px; }
 
+/* HUD pause/restart icons */
+.hud-right .icon-img { width: 20px; height: 20px; }
+
 /* Gear in pill uses accent color */
 .pill-gear-icon { width: 14px; height: 14px; filter: invert(0.55) sepia(1) saturate(4) hue-rotate(185deg) brightness(1.2); }
 [data-theme="light"] .pill-gear-icon { filter: invert(0.1) sepia(1) saturate(6) hue-rotate(185deg) brightness(0.8); }
