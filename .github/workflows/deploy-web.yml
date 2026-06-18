@@ -14,6 +14,11 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  HF_MODEL_REPO: Fungster/fruitbox-ppo
+  HF_MODEL_REVISION: main
+  HF_ONNX_FILE: web_assets/fruitbox_policy.onnx
+
 jobs:
   build-and-deploy:
     environment:
@@ -32,15 +37,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: web_assets/fruitbox_policy.onnx
-          key: hf-onnx-${{ env.HF_MODEL_REPO }}-main
-        env:
-          HF_MODEL_REPO: Fungster/fruitbox-ppo
+          key: hf-onnx-${{ env.HF_MODEL_REPO }}-${{ env.HF_MODEL_REVISION }}
 
       - name: Download ONNX model
         if: steps.onnx-cache.outputs.cache-hit != 'true'
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          mkdir -p web_assets
           uv run --with huggingface_hub python .github/scripts/download_hf_onnx.py
 
       - name: Build HTML5 web app
