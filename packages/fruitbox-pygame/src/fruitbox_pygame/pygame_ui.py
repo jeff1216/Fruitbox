@@ -49,8 +49,21 @@ BTN_COLOR        = (210, 208, 200)
 BTN_HOVER_COLOR  = (190, 188, 180)
 BTN_BORDER_COLOR = (160, 158, 150)
 
+def _assets_dir() -> str:
+    if getattr(sys, "frozen", False):
+        base = sys._MEIPASS
+        for candidate in (
+            os.path.join(base, "assets"),
+            os.path.join(base, "fruitbox_pygame", "assets"),
+        ):
+            if os.path.isdir(candidate):
+                return candidate
+        return os.path.join(base, "assets")
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+
+
 _BASE_DIR   = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-_ASSETS     = os.path.join(_BASE_DIR, "assets")
+_ASSETS     = _assets_dir()
 _THEME      = os.path.join(_ASSETS, "theme.json")
 _THEME_DARK = os.path.join(_ASSETS, "theme_dark.json")
 

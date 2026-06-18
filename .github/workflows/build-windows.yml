@@ -97,6 +97,7 @@ jobs:
           uv sync --package fruitbox-app-onnx --package fruitbox-pygame --package fruitbox-core --package fruitbox --group build
           uv run --package fruitbox-app-onnx python -m PyInstaller --onefile --windowed --name fruitbox-onnx `
             --add-data "fruitbox_policy.onnx;." `
+            --add-data "packages/fruitbox-pygame/src/fruitbox_pygame/assets;assets" `
             --collect-data fruitbox_pygame `
             --collect-data pygame_gui `
             --add-binary "C:\Windows\System32\VCRUNTIME140.dll;." `
@@ -113,6 +114,7 @@ jobs:
         run: |
           uv run --package fruitbox-app-torch --extra cpu python -m PyInstaller --onefile --windowed --name fruitbox `
             --add-data "fruitbox_ppo_final.zip;." `
+            --add-data "packages/fruitbox-pygame/src/fruitbox_pygame/assets;assets" `
             --collect-data fruitbox_pygame `
             --collect-data pygame_gui `
             --collect-data stable_baselines3 `
