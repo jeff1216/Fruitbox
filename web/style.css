@@ -358,14 +358,17 @@ canvas {
 .overlay-card-wide { min-width: 440px; max-width: 560px; }
 
 .overlay-header {
-  display: flex; align-items: center;
+  position: relative; display: flex; align-items: center;
   padding: 20px 24px 14px;
   gap: 8px;
 }
-.overlay-title { font-size: 22px; font-weight: 700; flex: 1; }
+.overlay-title {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 22px; font-weight: 700; pointer-events: none;
+}
 
 .overlay-close {
-  background: none; border: none; cursor: pointer;
+  margin-left: auto; background: none; border: none; cursor: pointer;
   color: var(--text-dim); font-size: 20px; font-weight: 700;
   padding: 2px 8px; border-radius: 6px; line-height: 1;
   transition: background 0.12s, color 0.12s;
@@ -381,6 +384,7 @@ canvas {
 .overlay-back:hover { color: var(--text); }
 
 .overlay-divider { height: 1px; background: var(--card-border); margin: 0 24px 4px; }
+.stats-loading { text-align: center; padding: 16px 0; color: var(--text-dim); }
 
 .overlay-note {
   text-align: center; font-size: 13px; color: var(--text-dim);
@@ -393,7 +397,7 @@ canvas {
 }
 
 .overlay-text-btn {
-  margin: 10px 24px 20px; padding: 9px 0;
+  display: block; margin: 10px auto 20px; padding: 9px 20px;
   background: var(--btn-bg); border: 1px solid var(--btn-border);
   border-radius: 8px; color: var(--text); font-size: 14px; font-weight: 600;
   cursor: pointer; transition: background 0.12s;
@@ -434,10 +438,15 @@ canvas {
 .stats-ov-sub { font-size: 12px; color: var(--text-dim); padding: 2px 0 8px; }
 .stats-ov-divider { height: 1px; background: var(--card-border); margin: 6px 24px; }
 
-.stats-filter-row {
-  display: flex; gap: 4px; padding: 0 24px 4px; align-items: center;
+.stats-filter-pills { display: flex; gap: 4px; }
+.stats-highscore-row {
+  display: flex; align-items: center; gap: 8px; padding: 4px 0;
 }
-.stats-filter-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-right: 8px; }
+.stats-highscore-row .stats-ov-label { flex: none; }
+.stats-highscore-row .stats-filter-pills { flex: 1; }
+.stats-highscore-row .stats-ov-val { flex: none; }
+.stats-time { font-size: 14px; font-weight: 400; color: var(--text-dim); }
+.stats-ov-seed { text-align: right; padding-bottom: 8px; }
 .stats-filter-btn {
   padding: 4px 14px; border-radius: 6px;
   border: 1px solid var(--btn-border); background: var(--btn-bg);
@@ -448,10 +457,10 @@ canvas {
 
 .seed-copy-btn {
   background: none; border: none; cursor: pointer;
-  color: var(--text-dim); font-size: 12px; text-align: left;
-  padding: 2px 4px; border-radius: 4px; transition: background 0.12s;
+  color: var(--text-dim); font-size: 13px; font-weight: 400;
+  padding: 0; border-radius: 4px; transition: color 0.12s;
 }
-.seed-copy-btn:hover { background: var(--btn-bg); color: var(--text); }
+.seed-copy-btn:hover { color: var(--text); }
 
 /* ── History table ──────────────────────────────────────────────────────────── */
 .history-header-row,
