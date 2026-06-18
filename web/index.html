@@ -110,6 +110,9 @@
           <div class="vs-score-side"><span class="vs-side-label">AI</span><span class="hud-val" id="vs-ai-score">0</span></div>
         </div>
         <div class="hud-right">
+          <button class="icon-btn" id="vs-toggle-ai-board" title="Hide AI board">
+            <img class="icon-img" id="vs-toggle-ai-icon" src="./assets/eye.png" alt="">
+          </button>
           <button class="icon-btn" id="vs-pause" title="Pause">
             <img class="icon-img" id="vs-pause-icon" src="./assets/pause.circle.png" alt="">
           </button>
@@ -126,7 +129,9 @@
         </div>
         <div class="board-wrap">
           <div class="board-label">AI (ONNX)</div>
-          <canvas id="canvas-ai-board"></canvas>
+          <div class="board-canvas-wrap" id="vs-ai-board-wrap">
+            <canvas id="canvas-ai-board"></canvas>
+          </div>
         </div>
       </div>
       <div class="over-overlay" id="vs-over">

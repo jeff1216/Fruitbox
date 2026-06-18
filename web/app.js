@@ -586,6 +586,9 @@ function startVs(gridType, seed = null) {
   vsHumanScore = 0; vsAiScore = 0; vsTimeRemaining = DEFAULT_TIME;
   vsHumanOver = false; vsAiOver = false; vsGameOver = false; vsPaused = false;
   $('vs-pause-icon').src = './assets/pause.circle.png';
+  $('vs-ai-board-wrap').classList.remove('board-covered');
+  $('vs-toggle-ai-icon').src = './assets/eye.png';
+  $('vs-toggle-ai-board').title = 'Hide AI board';
   vsGameSeed  = py('vs_seed');
   vsGameStart = performance.now();
   dragStart = null; dragEnd = null;
@@ -1064,6 +1067,12 @@ function setupMenuInput() {
   $('btn-vs').onclick = () => {
     const gt = selectedGridType() === 'custom' ? customSettings.gridBase : selectedGridType();
     startVs(gt);
+  };
+  $('vs-toggle-ai-board').onclick = () => {
+    const wrap = $('vs-ai-board-wrap');
+    const covered = wrap.classList.toggle('board-covered');
+    $('vs-toggle-ai-icon').src = covered ? './assets/eye.slash.png' : './assets/eye.png';
+    $('vs-toggle-ai-board').title = covered ? 'Show AI board' : 'Hide AI board';
   };
   $('btn-watch').onclick = () => {
     const gt = selectedGridType() === 'custom' ? customSettings.gridBase : selectedGridType();

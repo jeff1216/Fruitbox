@@ -136,6 +136,7 @@ html, body {
 /* ── Icon images ────────────────────────────────────────────────────────────── */
 .icon-img {
   width: 18px; height: 18px; display: block;
+  object-fit: contain;
   filter: invert(0.78);
   pointer-events: none;
 }
@@ -283,6 +284,20 @@ canvas {
 }
 .board-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .board-label { font-size: 13px; color: var(--text-dim); font-weight: 500; }
+.board-canvas-wrap {
+  position: relative;
+}
+.board-canvas-wrap.board-covered::after {
+  content: 'HIDDEN';
+  position: absolute; inset: 0;
+  background: var(--card-bg);
+  border-radius: 8px;
+  z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; font-weight: 700; letter-spacing: 0.04em;
+  font-family: system-ui, sans-serif;
+  color: var(--text-dim);
+}
 
 /* ── Game-over overlay ──────────────────────────────────────────────────────── */
 .over-overlay {
