@@ -874,50 +874,43 @@ function loadStatsOverlay() {
 
 function renderStatsSummary(s) {
   const totalGames = s.total_games || 0;
-  if (!totalGames) {
-    $('stats-overlay-content').innerHTML = '<div class="stats-loading" style="padding:16px 0">No games yet</div>';
-    return;
-  }
   const timeStr = fmtTime(s.total_time || 0);
   const score     = statsGridFilter === 'random' ? s.random_best     : s.solvable_best;
   const seed      = statsGridFilter === 'random' ? s.random_best_seed: s.solvable_best_seed;
   const bestTime  = statsGridFilter === 'random' ? s.random_best_time: s.solvable_best_time;
 
   const scoreStr = score != null ? String(score) : '—';
-  const timeScore = bestTime != null ? `  •  ${Math.round(bestTime)}s` : '';
-  const seedHtml = seed != null
-    ? `<button class="seed-copy-btn" id="seed-copy-btn" title="Copy seed">Seed: ${seed}</button>`
-    : '';
+  const seedStr = seed != null ? `<button class="seed-copy-btn" id="seed-copy-btn" title="Copy seed">Seed: ${seed}</button>` : '';
 
   $('stats-overlay-content').innerHTML = `
     <div class="stats-ov-section">
       <div class="stats-ov-row">
         <span class="stats-ov-label">Games Played</span>
-        <span class="stats-ov-val">${s.total_games}</span>
+        <span class="stats-ov-val">${totalGames || '—'}</span>
       </div>
       <div class="stats-ov-row">
         <span class="stats-ov-label">Time Played</span>
-        <span class="stats-ov-val">${timeStr}</span>
+        <span class="stats-ov-val">${totalGames ? timeStr : '—'}</span>
       </div>
     </div>
     <div class="stats-ov-divider"></div>
     <div class="stats-ov-section">
       <div class="stats-ov-row">
         <span class="stats-ov-label">VS AI Record</span>
-        <span class="stats-ov-val">${s.vs_wins}W &nbsp;${s.vs_losses}L &nbsp;${s.vs_ties}T</span>
+        <span class="stats-ov-val">${totalGames ? `${s.vs_wins}W &nbsp;${s.vs_losses}L &nbsp;${s.vs_ties}T` : '—'}</span>
       </div>
     </div>
     <div class="stats-ov-divider"></div>
     <div class="stats-ov-section">
-      <div class="stats-filter-row">
-        <span class="stats-filter-label">Best Score</span>
-        <button class="stats-filter-btn ${statsGridFilter==='random'?'active':''}" data-filter="random">Random</button>
-        <button class="stats-filter-btn ${statsGridFilter==='solvable'?'active':''}" data-filter="solvable">Solvable</button>
+      <div class="stats-highscore-row">
+        <span class="stats-ov-label">Highscore</span>
+        <div class="stats-filter-pills">
+          <button class="stats-filter-btn ${statsGridFilter==='random'?'active':''}" data-filter="random">Random</button>
+          <button class="stats-filter-btn ${statsGridFilter==='solvable'?'active':''}" data-filter="solvable">Solvable</button>
+        </div>
+        <span class="stats-ov-val">${scoreStr}${bestTime != null ? `<span class="stats-time"> • ${Math.round(bestTime)}s</span>` : ''}</span>
       </div>
-      <div class="stats-ov-row" style="padding-top:4px">
-        <span class="stats-ov-val">${scoreStr}${timeScore ? `<span style="font-size:14px;font-weight:400;color:var(--text-dim)">${timeScore}</span>` : ''}</span>
-      </div>
-      <div class="stats-ov-sub">${seedHtml}</div>
+      <div class="stats-ov-seed">${seedStr || '—'}</div>
     </div>`;
 
   // filter buttons
