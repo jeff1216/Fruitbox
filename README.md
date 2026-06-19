@@ -2,10 +2,12 @@
 
 A puzzle game where you select groups of fruits whose numbers sum to 10 to clear them from the grid — race the clock to maximize your score.
 
+**Play in browser:** https://jeff1216.github.io/Fruitbox
+
 ## Download
 
-- **[fruitbox.exe](https://github.com/jeff1216/Fruitbox/releases/latest/download/fruitbox.exe)** — PyTorch / SB3 inference
-- **[fruitbox-onnx.exe](https://github.com/jeff1216/Fruitbox/releases/latest/download/fruitbox-onnx.exe)** — ONNX inference (no PyTorch)
+- **[fruitbox.exe](https://github.com/jeff1216/Fruitbox/releases/latest/download/fruitbox.exe)** — ONNX inference (recommended)
+- **[fruitbox-pytorch.exe](https://github.com/jeff1216/Fruitbox/releases/latest/download/fruitbox-pytorch.exe)** — PyTorch / SB3 inference
 
 Windows only. No installation required — just run the executable.
 

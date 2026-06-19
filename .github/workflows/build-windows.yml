@@ -92,10 +92,10 @@ jobs:
           FRUITBOX_MODEL_MIRROR_URL: ${{ secrets.FRUITBOX_ONNX_MIRROR_URL }}
         run: python .github/scripts/download_hf_onnx.py
 
-      - name: Build fruitbox-onnx.exe
+      - name: Build fruitbox.exe (ONNX)
         run: |
           uv sync --package fruitbox-app-onnx --package fruitbox-pygame --package fruitbox-core --package fruitbox --group build
-          uv run --package fruitbox-app-onnx python -m PyInstaller --onefile --windowed --name fruitbox-onnx `
+          uv run --package fruitbox-app-onnx python -m PyInstaller --onefile --windowed --name fruitbox `
             --add-data "fruitbox_policy.onnx;." `
             --add-data "packages/fruitbox-pygame/src/fruitbox_pygame/assets;assets" `
             --collect-data fruitbox_pygame `
@@ -103,16 +103,16 @@ jobs:
             --add-binary "C:\Windows\System32\VCRUNTIME140.dll;." `
             --add-binary "C:\Windows\System32\VCRUNTIME140_1.dll;." `
             packages/fruitbox-app-onnx/src/fruitbox_app_onnx/__main__.py
-          python .github/scripts/check_exe_size.py dist/fruitbox-onnx.exe
+          python .github/scripts/check_exe_size.py dist/fruitbox.exe
 
       - name: Verify CPU torch
         run: |
           uv sync --extra cpu --package fruitbox-app-torch --package fruitbox-pygame --package fruitbox-core --package fruitbox --group build
           python .github/scripts/verify_torch_cpu.py
 
-      - name: Build fruitbox.exe (PyTorch)
+      - name: Build fruitbox-pytorch.exe
         run: |
-          uv run --package fruitbox-app-torch --extra cpu python -m PyInstaller --onefile --windowed --name fruitbox `
+          uv run --package fruitbox-app-torch --extra cpu python -m PyInstaller --onefile --windowed --name fruitbox-pytorch `
             --add-data "fruitbox_ppo_final.zip;." `
             --add-data "packages/fruitbox-pygame/src/fruitbox_pygame/assets;assets" `
             --collect-data fruitbox_pygame `
@@ -122,7 +122,7 @@ jobs:
             --add-binary "C:\Windows\System32\VCRUNTIME140.dll;." `
             --add-binary "C:\Windows\System32\VCRUNTIME140_1.dll;." `
             packages/fruitbox-app-torch/src/fruitbox_app_torch/__main__.py
-          python .github/scripts/check_exe_size.py dist/fruitbox.exe
+          python .github/scripts/check_exe_size.py dist/fruitbox-pytorch.exe
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
@@ -130,7 +130,7 @@ jobs:
           name: FruitBox-windows
           path: |
             dist/fruitbox.exe
-            dist/fruitbox-onnx.exe
+            dist/fruitbox-pytorch.exe
 
   release:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -175,18 +175,18 @@ jobs:
           Automated Windows build from ``${{ github.ref_name }}`` @ [$shortSha]($commitUrl).
 
           Downloads:
-          - [fruitbox.exe](${{ github.server_url }}/${{ github.repository }}/releases/download/$buildTag/fruitbox.exe) — PyTorch / SB3
-          - [fruitbox-onnx.exe](${{ github.server_url }}/${{ github.repository }}/releases/download/$buildTag/fruitbox-onnx.exe) — ONNX (no PyTorch)
+          - [fruitbox.exe](${{ github.server_url }}/${{ github.repository }}/releases/download/$buildTag/fruitbox.exe) — ONNX (recommended)
+          - [fruitbox-pytorch.exe](${{ github.server_url }}/${{ github.repository }}/releases/download/$buildTag/fruitbox-pytorch.exe) — PyTorch / SB3
 
           Build tag: [$buildTag](${{ github.server_url }}/${{ github.repository }}/releases/tag/$buildTag)
           "@
 
           gh release view $buildTag 2>$null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload $buildTag dist/fruitbox.exe dist/fruitbox-onnx.exe --clobber
+            gh release upload $buildTag dist/fruitbox.exe dist/fruitbox-pytorch.exe --clobber
             gh release edit $buildTag --latest --prerelease=false --notes $releaseNotes
           } else {
-            gh release create $buildTag dist/fruitbox.exe dist/fruitbox-onnx.exe `
+            gh release create $buildTag dist/fruitbox.exe dist/fruitbox-pytorch.exe `
               --title "Build $shortSha" `
               --notes $releaseNotes `
               --latest
@@ -198,5 +198,5 @@ jobs:
         with:
           files: |
             dist/fruitbox.exe
-            dist/fruitbox-onnx.exe
+            dist/fruitbox-pytorch.exe
           generate_release_notes: true
