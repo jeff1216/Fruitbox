@@ -307,6 +307,7 @@ canvas {
   background: rgba(0,0,0,0.6);
   align-items: center; justify-content: center;
   z-index: 100;
+  pointer-events: none;
 }
 .over-overlay.show { display: flex; }
 
@@ -316,6 +317,7 @@ canvas {
   padding: 36px 48px;
   background: var(--card-bg); border: 2px solid var(--card-border);
   border-radius: 14px; min-width: 280px; text-align: center;
+  pointer-events: all;
 }
 .over-card.win  { border-color: var(--win-border);  background: var(--win-bg); }
 .over-card.lose { border-color: var(--lose-border); background: var(--lose-bg); }
@@ -356,6 +358,7 @@ canvas {
   max-height: 90vh; overflow: hidden;
 }
 .overlay-card-wide { min-width: 440px; max-width: 560px; }
+#overlay-stats .overlay-card { user-select: text; }
 
 .overlay-header {
   position: relative; display: flex; align-items: center;
@@ -455,12 +458,7 @@ canvas {
 .stats-filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .stats-filter-btn:not(.active):hover { background: var(--btn-border); color: var(--text); }
 
-.seed-copy-btn {
-  background: none; border: none; cursor: pointer;
-  color: var(--text-dim); font-size: 13px; font-weight: 400;
-  padding: 0; border-radius: 4px; transition: color 0.12s;
-}
-.seed-copy-btn:hover { color: var(--text); }
+.seed-copy-btn { color: var(--text-dim); font-size: 13px; font-weight: 400; }
 
 /* ── History table ──────────────────────────────────────────────────────────── */
 .history-header-row,
