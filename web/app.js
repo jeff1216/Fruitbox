@@ -493,7 +493,15 @@ function startPlay(gridType, opts = {}) {
 
 function playLoop(ts) {
   animId = null;
-  if (playGameOver) return;
+
+  const bounds = selBounds(dragStart, dragEnd);
+
+  if (playGameOver) {
+    drawBoard($('canvas-play'), playGrid, playRows, playCols, CELL, GAP,
+      { drag: bounds, validDrag: null, paused: false });
+    animId = requestAnimationFrame(playLoop);
+    return;
+  }
 
   const dt = lastTs === null ? 0 : (ts - lastTs) / 1000;
   lastTs = ts;
@@ -506,7 +514,6 @@ function playLoop(ts) {
   }
 
   playGrid = py('play_grid');
-  const bounds = selBounds(dragStart, dragEnd);
   let isValid = null;
   if (bounds) isValid = py('play_validate', ...bounds);
 
@@ -522,7 +529,7 @@ function playLoop(ts) {
 
 function endPlay(reason) {
   playGameOver = true;
-  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  if (!animId) animId = requestAnimationFrame(playLoop);
   $('play-over-reason').textContent = reason;
   $('play-over-score').textContent = playScore;
   showOver('play-over', '');
@@ -537,21 +544,23 @@ function endPlay(reason) {
 function setupPlayInput() {
   const canvas = $('canvas-play');
   canvas.addEventListener('mousedown', e => {
-    if (playGameOver || playPaused || anyOverlayOpen()) return;
+    if (playPaused || anyOverlayOpen()) return;
     const cell = pixelToCell(canvas, e.clientX, e.clientY, CELL, GAP, playRows, playCols);
     if (cell) { dragStart = cell; dragEnd = cell; }
   });
   canvas.addEventListener('mousemove', e => {
-    if (!dragStart || playGameOver || playPaused) return;
+    if (!dragStart || playPaused) return;
     const cell = pixelToCell(canvas, e.clientX, e.clientY, CELL, GAP, playRows, playCols);
     if (cell) dragEnd = cell;
   });
   canvas.addEventListener('mouseup', () => {
-    if (!dragStart || playGameOver || playPaused) return;
-    const bounds = selBounds(dragStart, dragEnd);
-    if (bounds) {
-      const [pts, noMoves] = py('play_apply', ...bounds);
-      if (noMoves) { dragStart = null; dragEnd = null; endPlay('No more moves'); return; }
+    if (!dragStart || playPaused) return;
+    if (!playGameOver) {
+      const bounds = selBounds(dragStart, dragEnd);
+      if (bounds) {
+        const [pts, noMoves] = py('play_apply', ...bounds);
+        if (noMoves) { dragStart = null; dragEnd = null; endPlay('No more moves'); return; }
+      }
     }
     dragStart = null; dragEnd = null;
   });
@@ -791,11 +800,17 @@ async function runWatchAiStep() {
   } catch(e) { console.error('Watch AI step error', e); }
 }
 
+let watchAutoRestartTimer = null;
+
 function endWatch(reason) {
   watchOver = true;
   if (animId) { cancelAnimationFrame(animId); animId = null; }
   $('watch-over-score').textContent = watchScore;
   showOver('watch-over', '');
+  clearTimeout(watchAutoRestartTimer);
+  watchAutoRestartTimer = setTimeout(() => {
+    if (watchOver) $('watch-restart').onclick();
+  }, 5000);
 }
 
 function setupWatchInput() {
@@ -804,10 +819,10 @@ function setupWatchInput() {
     const gt = selectedGridType() === 'custom' ? customSettings.gridBase : selectedGridType();
     startWatch(gt);
   };
-  $('watch-back').onclick       = () => { cancelAnimationFrame(animId); showMenu(); };
-  $('watch-over-again').onclick = () => $('watch-restart').onclick();
-  $('watch-over-menu').onclick  = () => showMenu();
-  $('watch-over-close').onclick = () => hideOver('watch-over');
+  $('watch-back').onclick       = () => { clearTimeout(watchAutoRestartTimer); cancelAnimationFrame(animId); showMenu(); };
+  $('watch-over-again').onclick = () => { clearTimeout(watchAutoRestartTimer); $('watch-restart').onclick(); };
+  $('watch-over-menu').onclick  = () => { clearTimeout(watchAutoRestartTimer); showMenu(); };
+  $('watch-over-close').onclick = () => { clearTimeout(watchAutoRestartTimer); hideOver('watch-over'); };
 }
 
 // ── Settings overlay ──────────────────────────────────────────────────────────
@@ -854,7 +869,6 @@ function setupSettingsOverlay() {
 // ── Stats overlay ─────────────────────────────────────────────────────────────
 let statsGridFilter = 'random';
 let statsHistory = [];
-let statsSelectedRow = null;
 
 function openStats() {
   $('stats-view-main').classList.remove('hidden');
@@ -880,7 +894,7 @@ function renderStatsSummary(s) {
   const bestTime  = statsGridFilter === 'random' ? s.random_best_time: s.solvable_best_time;
 
   const scoreStr = score != null ? String(score) : '—';
-  const seedStr = seed != null ? `<button class="seed-copy-btn" id="seed-copy-btn" title="Copy seed">Seed: ${seed}</button>` : '';
+  const seedStr = seed != null ? `<span class="seed-copy-btn">Seed: ${seed}</span>` : '';
 
   $('stats-overlay-content').innerHTML = `
     <div class="stats-ov-section">
@@ -921,18 +935,10 @@ function renderStatsSummary(s) {
     });
   });
 
-  // seed copy
-  const seedBtn = $('seed-copy-btn');
-  if (seedBtn) {
-    seedBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(String(seed)).then(() => showToast('Seed copied!'));
-    });
-  }
 }
 
 function openStatsHistory() {
   statsHistory = JSON.parse(py('stats_history_json'));
-  statsSelectedRow = null;
   renderHistory();
   $('stats-view-main').classList.add('hidden');
   $('stats-view-history').classList.remove('hidden');
@@ -946,24 +952,12 @@ function renderHistory() {
     const grid  = g.grid_type ? (g.grid_type[0].toUpperCase() + g.grid_type.slice(1)) : '—';
     const opp   = g.opp_score != null ? String(g.opp_score) : '—';
     const seed  = g.seed != null ? String(g.seed) : '—';
-    const sel   = statsSelectedRow === i ? ' selected' : '';
-    return `<div class="history-row${sel}" data-idx="${i}">
+    return `<div class="history-row">
       <span>${mode}</span><span>${grid}</span><span>${g.self_score}</span>
       <span class="history-opp">${opp}</span><span class="history-seed">${seed}</span>
     </div>`;
   }).join('');
 
-  list.querySelectorAll('.history-row').forEach(row => {
-    row.addEventListener('click', () => {
-      const idx = parseInt(row.dataset.idx);
-      statsSelectedRow = idx;
-      const seed = statsHistory[idx]?.seed;
-      if (seed != null) {
-        navigator.clipboard.writeText(String(seed)).then(() => showToast('Seed copied!'));
-      }
-      renderHistory();
-    });
-  });
 }
 
 function setupStatsOverlay() {
