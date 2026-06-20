@@ -275,7 +275,7 @@ html, body {
 /* ── Canvas & boards ────────────────────────────────────────────────────────── */
 canvas {
   display: block;
-  cursor: crosshair;
+  cursor: default;
   border-radius: 0 0 4px 4px;
 }
 
