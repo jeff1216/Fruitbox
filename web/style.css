@@ -277,6 +277,9 @@ canvas {
   display: block;
   cursor: default;
   border-radius: 0 0 4px 4px;
+  max-width: 100%;
+  height: auto;
+  touch-action: none;
 }
 
 .boards-row {
@@ -546,3 +549,13 @@ canvas {
 
 /* ── Utilities ──────────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
+
+/* ── Mobile ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  #screen-play, #screen-vs, #screen-watch { align-items: flex-start; }
+  .game-wrap { padding: 8px 8px 16px; }
+  .boards-row { width: 100%; }
+  .board-wrap { width: 100%; }
+  .board-canvas-wrap { width: 100%; }
+  .board-wrap.pov-hidden { display: none; }
+}

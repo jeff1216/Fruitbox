@@ -2,6 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const DEFAULT_ROWS = 10, DEFAULT_COLS = 17;
+const isMobileRotated = () => window.matchMedia('(max-width: 700px)').matches;
 const CELL = 46, GAP = 2;
 const VS_CELL = 46, VS_GAP = 2;
 const DEFAULT_TIME = 120;
@@ -83,6 +84,7 @@ let vsHumanGrid = null, vsAiGrid = null;
 let vsHumanScore = 0, vsAiScore = 0, vsTimeRemaining = 0;
 let vsHumanOver = false, vsAiOver = false, vsGameOver = false;
 let vsGameSeed = null, vsGameStart = 0, vsPaused = false;
+let vsMobilePovAi = false;
 let lastAiMoveTs = 0, aiHighlight = null;
 
 let watchGrid = null, watchScore = 0, watchTimeRemaining = 0;
@@ -370,7 +372,9 @@ async function onnxStep(inputs, validMoves) {
 // ── Canvas rendering ──────────────────────────────────────────────────────────
 function setupCanvas(canvas, rows, cols, cellSize, gap) {
   const step = cellSize + gap;
-  const w = step * cols - gap, h = step * rows - gap;
+  const rot = isMobileRotated();
+  const w = step * (rot ? rows : cols) - gap;
+  const h = step * (rot ? cols : rows) - gap;
   canvas.width = w; canvas.height = h;
   return { step, w, h };
 }
@@ -380,7 +384,9 @@ function pixelToCell(canvas, px, py_, cellSize, gap, rows, cols) {
   const rect = canvas.getBoundingClientRect();
   const x = (px - rect.left) * (canvas.width / rect.width);
   const y = (py_ - rect.top)  * (canvas.height / rect.height);
-  const c = Math.floor(x / step), r = Math.floor(y / step);
+  const rot = isMobileRotated();
+  const r = Math.floor((rot ? x : y) / step);
+  const c = Math.floor((rot ? y : x) / step);
   if (r >= 0 && r < rows && c >= 0 && c < cols) return [r, c];
   return null;
 }
@@ -397,6 +403,7 @@ function drawBoard(canvas, grid, rows, cols, cellSize, gap, {
   if (!grid) return;
   const ctx  = canvas.getContext('2d');
   const step = cellSize + gap;
+  const rot = isMobileRotated();
 
   ctx.fillStyle = C.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -409,7 +416,7 @@ function drawBoard(canvas, grid, rows, cols, cellSize, gap, {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const v = grid[r * cols + c];
-      const x = c * step, y = r * step;
+      const x = (rot ? r : c) * step, y = (rot ? c : r) * step;
       if (v === -1) {
         ctx.fillStyle = C.cleared;
         ctx.fillRect(x, y, cellSize, cellSize);
@@ -427,8 +434,8 @@ function drawBoard(canvas, grid, rows, cols, cellSize, gap, {
 
   if (aiSel) {
     const [r1,c1,r2,c2] = aiSel;
-    const sx = c1*step, sy = r1*step;
-    const sw = (c2-c1)*step+cellSize, sh = (r2-r1)*step+cellSize;
+    const sx = (rot ? r1 : c1)*step, sy = (rot ? c1 : r1)*step;
+    const sw = (rot ? r2-r1 : c2-c1)*step+cellSize, sh = (rot ? c2-c1 : r2-r1)*step+cellSize;
     ctx.fillStyle = C.aiSel;   ctx.fillRect(sx, sy, sw, sh);
     ctx.strokeStyle = C.aiBorder; ctx.lineWidth = 2;
     ctx.strokeRect(sx+1, sy+1, sw-2, sh-2);
@@ -436,8 +443,8 @@ function drawBoard(canvas, grid, rows, cols, cellSize, gap, {
 
   if (drag) {
     const [r1,c1,r2,c2] = drag;
-    const sx = c1*step, sy = r1*step;
-    const sw = (c2-c1)*step+cellSize, sh = (r2-r1)*step+cellSize;
+    const sx = (rot ? r1 : c1)*step, sy = (rot ? c1 : r1)*step;
+    const sw = (rot ? r2-r1 : c2-c1)*step+cellSize, sh = (rot ? c2-c1 : r2-r1)*step+cellSize;
     ctx.fillStyle   = validDrag === true  ? C.validFill  : validDrag === false ? C.badFill  : C.selFill;
     ctx.strokeStyle = validDrag === true  ? C.validBorder: validDrag === false ? C.badBorder: C.selBorder;
     ctx.fillRect(sx, sy, sw, sh);
@@ -566,6 +573,33 @@ function setupPlayInput() {
   });
   canvas.addEventListener('mouseleave', () => { dragStart = null; dragEnd = null; });
 
+  canvas.addEventListener('touchstart', e => {
+    if (playPaused || anyOverlayOpen()) return;
+    const t = e.touches[0];
+    const cell = pixelToCell(canvas, t.clientX, t.clientY, CELL, GAP, playRows, playCols);
+    if (cell) { dragStart = cell; dragEnd = cell; }
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchmove', e => {
+    if (!dragStart || playPaused) return;
+    const t = e.touches[0];
+    const cell = pixelToCell(canvas, t.clientX, t.clientY, CELL, GAP, playRows, playCols);
+    if (cell) dragEnd = cell;
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchend', e => {
+    if (!dragStart || playPaused) return;
+    if (!playGameOver) {
+      const bounds = selBounds(dragStart, dragEnd);
+      if (bounds) {
+        const [, noMoves] = py('play_apply', ...bounds);
+        if (noMoves) { dragStart = null; dragEnd = null; endPlay('No more moves'); return; }
+      }
+    }
+    dragStart = null; dragEnd = null;
+  });
+  canvas.addEventListener('touchcancel', () => { dragStart = null; dragEnd = null; });
+
   $('play-pause').onclick = () => {
     if (playGameOver) return;
     if (playPaused) { py('play_resume'); playPaused = false; $('play-pause-icon').src = './assets/pause.circle.png'; $('play-canvas-wrap').classList.remove('board-paused'); lastTs = null; }
@@ -594,6 +628,13 @@ function startVs(gridType, seed = null) {
   $('vs-ai-board-wrap').classList.add('board-covered');
   $('vs-toggle-ai-icon').src = './assets/eye.slash.png';
   $('vs-toggle-ai-board').title = 'Show AI board';
+  if (window.matchMedia('(max-width: 700px)').matches) {
+    vsMobilePovAi = false;
+    $('vs-ai-board-wrap').classList.remove('board-covered');
+    $('vs-human-canvas-wrap').closest('.board-wrap').classList.remove('pov-hidden');
+    $('vs-ai-board-wrap').closest('.board-wrap').classList.add('pov-hidden');
+    $('vs-toggle-ai-board').title = 'Switch to AI board';
+  }
   vsGameSeed  = py('vs_seed');
   vsGameStart = performance.now();
   dragStart = null; dragEnd = null;
@@ -715,6 +756,31 @@ function setupVsInput() {
     dragStart = null; dragEnd = null;
   });
   canvas.addEventListener('mouseleave', () => { dragStart = null; dragEnd = null; });
+
+  canvas.addEventListener('touchstart', e => {
+    if (vsGameOver || vsHumanOver || vsPaused || anyOverlayOpen()) return;
+    const t = e.touches[0];
+    const cell = pixelToCell(canvas, t.clientX, t.clientY, VS_CELL, VS_GAP, DEFAULT_ROWS, DEFAULT_COLS);
+    if (cell) { dragStart = cell; dragEnd = cell; }
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchmove', e => {
+    if (!dragStart || vsGameOver || vsHumanOver || vsPaused) return;
+    const t = e.touches[0];
+    const cell = pixelToCell(canvas, t.clientX, t.clientY, VS_CELL, VS_GAP, DEFAULT_ROWS, DEFAULT_COLS);
+    if (cell) dragEnd = cell;
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchend', e => {
+    if (!dragStart || vsGameOver || vsHumanOver || vsPaused) return;
+    const bounds = selBounds(dragStart, dragEnd);
+    if (bounds) {
+      const [, noMoves] = py('vs_human_apply', ...bounds);
+      if (noMoves) vsHumanOver = true;
+    }
+    dragStart = null; dragEnd = null;
+  });
+  canvas.addEventListener('touchcancel', () => { dragStart = null; dragEnd = null; });
 
   $('vs-pause').onclick = () => {
     if (vsGameOver) return;
@@ -1054,10 +1120,20 @@ function setupMenuInput() {
     startVs(gt);
   };
   $('vs-toggle-ai-board').onclick = () => {
-    const wrap = $('vs-ai-board-wrap');
-    const covered = wrap.classList.toggle('board-covered');
-    $('vs-toggle-ai-icon').src = covered ? './assets/eye.slash.png' : './assets/eye.png';
-    $('vs-toggle-ai-board').title = covered ? 'Show AI board' : 'Hide AI board';
+    if (window.matchMedia('(max-width: 700px)').matches) {
+      vsMobilePovAi = !vsMobilePovAi;
+      const humanWrap = $('vs-human-canvas-wrap').closest('.board-wrap');
+      const aiWrap = $('vs-ai-board-wrap').closest('.board-wrap');
+      humanWrap.classList.toggle('pov-hidden', vsMobilePovAi);
+      aiWrap.classList.toggle('pov-hidden', !vsMobilePovAi);
+      $('vs-toggle-ai-icon').src = vsMobilePovAi ? './assets/eye.png' : './assets/eye.slash.png';
+      $('vs-toggle-ai-board').title = vsMobilePovAi ? 'Switch to your board' : 'Switch to AI board';
+    } else {
+      const wrap = $('vs-ai-board-wrap');
+      const covered = wrap.classList.toggle('board-covered');
+      $('vs-toggle-ai-icon').src = covered ? './assets/eye.slash.png' : './assets/eye.png';
+      $('vs-toggle-ai-board').title = covered ? 'Show AI board' : 'Hide AI board';
+    }
   };
   $('btn-watch').onclick = () => {
     const gt = selectedGridType() === 'custom' ? customSettings.gridBase : selectedGridType();
