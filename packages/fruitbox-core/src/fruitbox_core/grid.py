@@ -37,14 +37,16 @@ class FruitBoxGrid:
                 r1, c1, r2, c2 = rect
                 numbers = self._numbers_summing_to_10(tuple_size)
                 idx = 0
+                newly_placed = set()
                 for i in range(r1, r2 + 1):
                     for j in range(c1, c2 + 1):
                         if self.grid[i][j] == -1:
                             self.grid[i][j] = numbers[idx]
+                            newly_placed.add((i, j))
                             idx += 1
                 self.empty_count -= tuple_size
                 # print(f"placed {tuple_size} cells at ({r1},{c1})->({r2},{c2}), empty_count={self.empty_count}")
-                # print(self.grid)
+                # self._print_grid(newly_placed)
 
             return self.grid
 
@@ -66,14 +68,53 @@ class FruitBoxGrid:
         if tuple_size > self.empty_count:
             return None
 
-        for _ in range(max_attempts):
-            ra, rb = int(self.rng.integers(0, self.rows)),   int(self.rng.integers(0, self.rows))
-            ca, cb = int(self.rng.integers(0, self.columns)), int(self.rng.integers(0, self.columns))
-            r1, r2 = min(ra, rb), max(ra, rb)
-            c1, c2 = min(ca, cb), max(ca, cb)
-            if self.checkEmptySlots(r1, c1, r2, c2, tuple_size):
-                return r1, c1, r2, c2
-        return None
+        if self.rng.random() < 0.3:
+            for _ in range(max_attempts):
+                ra, rb = int(self.rng.integers(0, self.rows)),   int(self.rng.integers(0, self.rows))
+                ca, cb = int(self.rng.integers(0, self.columns)), int(self.rng.integers(0, self.columns))
+                r1, r2 = min(ra, rb), max(ra, rb)
+                c1, c2 = min(ca, cb), max(ca, cb)
+                if self.checkEmptySlots(r1, c1, r2, c2, tuple_size):
+                    # print("rand rect")
+                    return r1, c1, r2, c2
+            return None
+        else:
+            best, best_area = None, 0
+            ban_2x2 = tuple_size in (2, 4)
+            for _ in range(max_attempts):
+                ra, rb = int(self.rng.integers(0, self.rows)),   int(self.rng.integers(0, self.rows))
+                ca, cb = int(self.rng.integers(0, self.columns)), int(self.rng.integers(0, self.columns))
+                r1, r2 = min(ra, rb), max(ra, rb)
+                c1, c2 = min(ca, cb), max(ca, cb)
+                if ban_2x2 and (r2 - r1 + 1) == 2 and (c2 - c1 + 1) == 2:
+                    continue
+                area = (r2 - r1 + 1) * (c2 - c1 + 1)
+                if area <= best_area or not self.checkEmptySlots(r1, c1, r2, c2, tuple_size):
+                    continue
+                sub = self.grid[r1:r2+1, c1:c2+1] == -1
+                if (sub[:, :-1] & sub[:, 1:]).any() or (sub[:-1, :] & sub[1:, :]).any():
+                    continue
+                best, best_area = (r1, c1, r2, c2), area
+            # print("best rect")
+            return best
+
+    def _print_grid(self, newly_placed=None):
+        NEW  = '\033[1;92m'
+        DIM  = '\033[2m'
+        RST  = '\033[0m'
+        lines = []
+        for i in range(self.rows):
+            row = []
+            for j in range(self.columns):
+                v = self.grid[i][j]
+                if v == -1:
+                    row.append(f'{DIM} ·{RST}')
+                elif newly_placed and (i, j) in newly_placed:
+                    row.append(f'{NEW}{v:2}{RST}')
+                else:
+                    row.append(f'{v:2}')
+            lines.append(' '.join(row))
+        print('\n'.join(lines))
 
     def checkEmptySlots(self, r1, c1, r2, c2, empty):
         count_empty = 0
