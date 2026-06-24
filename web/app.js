@@ -43,11 +43,15 @@ function applyTheme(dark) {
 const KEY_DEFAULTS = { pause: 'Space', restart: 'KeyR', menu: 'Escape' };
 let keybinds = { ...KEY_DEFAULTS };
 
+let vsAiDefaultHidden = true;
+
 function loadSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem('keybinds') || '{}');
     keybinds = { ...KEY_DEFAULTS, ...saved };
   } catch { keybinds = { ...KEY_DEFAULTS }; }
+  const savedHidden = localStorage.getItem('vsAiDefaultHidden');
+  if (savedHidden !== null) vsAiDefaultHidden = savedHidden !== '0';
 }
 
 function saveSettings() {
@@ -665,9 +669,9 @@ async function startVs(gridType, seed = null, overlay = false) {
   vsHumanOver = false; vsAiOver = false; vsGameOver = false; vsPaused = false;
   $('vs-pause-icon').src = './assets/pause.circle.png';
   $('vs-human-canvas-wrap').classList.remove('board-paused');
-  $('vs-ai-board-wrap').classList.add('board-covered');
-  $('vs-toggle-ai-icon').src = './assets/eye.slash.png';
-  $('vs-toggle-ai-board').title = 'Show AI board';
+  $('vs-ai-board-wrap').classList.toggle('board-covered', vsAiDefaultHidden);
+  $('vs-toggle-ai-icon').src = vsAiDefaultHidden ? './assets/eye.slash.png' : './assets/eye.png';
+  $('vs-toggle-ai-board').title = vsAiDefaultHidden ? 'Show AI board' : 'Hide AI board';
   if (window.matchMedia('(max-width: 700px)').matches) {
     vsMobilePovAi = false;
     $('vs-ai-board-wrap').classList.remove('board-covered');
@@ -839,7 +843,15 @@ function setupVsInput() {
 }
 
 // ── Watch AI ──────────────────────────────────────────────────────────────────
-function startWatch(gridType, seed = null) {
+async function startWatch(gridType, seed = null, overlay = false) {
+  if (overlay) {
+    drawGridOverlay($('canvas-watch'));
+  } else {
+    setProgress(100, 'Generating grid…');
+    showScreen('screen-loading');
+  }
+  await new Promise(r => setTimeout(r, 0));
+
   py('watch_init', gridType, seed);
   watchGrid = py('watch_grid');
   watchScore = 0; watchTimeRemaining = DEFAULT_TIME; watchOver = false;
@@ -915,7 +927,11 @@ function endWatch(reason) {
   showOver('watch-over', '');
   clearTimeout(watchAutoRestartTimer);
   watchAutoRestartTimer = setTimeout(() => {
-    if (watchOver) $('watch-restart').onclick();
+    if (watchOver) {
+      cancelAnimationFrame(animId);
+      const gt = selectedGridType() === 'custom' ? customSettings.gridBase : selectedGridType();
+      startWatch(gt, null, true);
+    }
   }, 5000);
 }
 
@@ -923,7 +939,7 @@ function setupWatchInput() {
   $('watch-restart').onclick    = () => {
     cancelAnimationFrame(animId);
     const gt = selectedGridType() === 'custom' ? customSettings.gridBase : selectedGridType();
-    startWatch(gt);
+    startWatch(gt, null, true);
   };
   $('watch-back').onclick       = () => { clearTimeout(watchAutoRestartTimer); cancelAnimationFrame(animId); showMenu(); };
   $('watch-over-again').onclick = () => { clearTimeout(watchAutoRestartTimer); $('watch-restart').onclick(); };
@@ -934,9 +950,14 @@ function setupWatchInput() {
 // ── Settings overlay ──────────────────────────────────────────────────────────
 let waitingForBinding = null;
 
+function updateVsAiBoardBtn() {
+  $('setting-vs-ai-board').textContent = vsAiDefaultHidden ? 'HIDDEN' : 'SHOWN';
+}
+
 function openSettings() {
   waitingForBinding = null;
   updateKeyBtns();
+  updateVsAiBoardBtn();
   $('settings-capture-hint').classList.add('hidden');
   openOverlay('overlay-settings');
 }
@@ -947,10 +968,6 @@ function updateKeyBtns() {
     btn.textContent = keyCodeDisplay(keybinds[k]);
     btn.classList.remove('waiting');
   });
-  // also update help overlay keys
-  $('help-key-pause').textContent   = keyCodeDisplay(keybinds.pause);
-  $('help-key-restart').textContent = keyCodeDisplay(keybinds.restart);
-  $('help-key-menu').textContent    = keyCodeDisplay(keybinds.menu);
 }
 
 function setupSettingsOverlay() {
@@ -969,6 +986,12 @@ function setupSettingsOverlay() {
       btn.classList.add('waiting');
       $('settings-capture-hint').classList.remove('hidden');
     });
+  });
+
+  $('setting-vs-ai-board').addEventListener('click', () => {
+    vsAiDefaultHidden = !vsAiDefaultHidden;
+    localStorage.setItem('vsAiDefaultHidden', vsAiDefaultHidden ? '1' : '0');
+    updateVsAiBoardBtn();
   });
 }
 
