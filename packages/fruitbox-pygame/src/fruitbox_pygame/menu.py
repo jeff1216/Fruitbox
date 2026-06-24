@@ -556,15 +556,40 @@ class FruitBoxMenu:
 
     def _launch(self, mode):
         if mode == "single_player":
+            C = fruitbox_colors.C
+            loading_surf = pygame.font.SysFont("Arial", 21, bold=True).render(
+                "Generating grid…", True, C["TEXT_SECONDARY"])
+            self.screen.fill(C["BG"])
+            self.screen.blit(loading_surf, (
+                (MENU_W - loading_surf.get_width())  // 2,
+                (MENU_H - loading_surf.get_height()) // 2,
+            ))
+            pygame.event.pump()
+            pygame.display.flip()
+
             if self.grid_type == "custom":
                 _s   = self.custom_overlay.get_settings()
                 game = FruitBoxGame(rows=_s["rows"], columns=_s["cols"], grid_type=_s["grid_base"], time_limit=_s["time_limit"])
-                game.reset(seed=_s["seed"])
                 screen = self._resize_keep_top(*game_window_size(_s["rows"], _s["cols"]))
+                screen.fill(C["BG"])
+                screen.blit(loading_surf, (
+                    (screen.get_width()  - loading_surf.get_width())  // 2,
+                    (screen.get_height() - loading_surf.get_height()) // 2,
+                ))
+                pygame.event.pump()
+                pygame.display.flip()
+                game.reset(seed=_s["seed"])
             else:
                 game = FruitBoxGame(grid_type=self.grid_type)
-                game.reset()
                 screen = self._resize_keep_top(GAME_W, GAME_H)
+                screen.fill(C["BG"])
+                screen.blit(loading_surf, (
+                    (GAME_W - loading_surf.get_width())  // 2,
+                    (GAME_H - loading_surf.get_height()) // 2,
+                ))
+                pygame.event.pump()
+                pygame.display.flip()
+                game.reset()
             _gamemode = "Custom" if self.grid_type == "custom" else "single_player"
             _rseed    = _s["seed"] if self.grid_type == "custom" else None
             FruitBoxPygame(game=game, screen=screen, gamemode=_gamemode, restart_seed=_rseed).run()
@@ -579,6 +604,7 @@ class FruitBoxMenu:
                 (MENU_W - loading_surf.get_width())  // 2,
                 (MENU_H - loading_surf.get_height()) // 2,
             ))
+            pygame.event.pump()
             pygame.display.flip()
 
             from .vs import WIN_W as VS_W, WIN_H as VS_H
@@ -588,6 +614,7 @@ class FruitBoxMenu:
                 (VS_W - loading_surf.get_width())  // 2,
                 (VS_H - loading_surf.get_height()) // 2,
             ))
+            pygame.event.pump()
             pygame.display.flip()
             _gt = self.custom_overlay.get_settings()["grid_base"] if self.grid_type == "custom" else self.grid_type
             self._vs_class()(opponent=self.model_opponent, screen=screen, grid_type=_gt).run()
@@ -602,6 +629,7 @@ class FruitBoxMenu:
                 (MENU_W - loading_surf.get_width())  // 2,
                 (MENU_H - loading_surf.get_height()) // 2,
             ))
+            pygame.event.pump()
             pygame.display.flip()
 
             from .ai_watch import FruitBoxAiWatch
@@ -611,6 +639,7 @@ class FruitBoxMenu:
                 (GAME_W - loading_surf.get_width())  // 2,
                 (GAME_H - loading_surf.get_height()) // 2,
             ))
+            pygame.event.pump()
             pygame.display.flip()
             _gt = self.custom_overlay.get_settings()["grid_base"] if self.grid_type == "custom" else self.grid_type
             self._watch_class()(screen=screen, grid_type=_gt).run()

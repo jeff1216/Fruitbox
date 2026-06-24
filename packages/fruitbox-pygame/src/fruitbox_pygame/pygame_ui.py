@@ -296,7 +296,22 @@ class FruitBoxPygame:
 
     # ── state ─────────────────────────────────────────────────────
 
+    def _draw_loading_canvas(self):
+        C         = fruitbox_colors.C
+        grid_rect = pygame.Rect(PADDING, HUD_H + PADDING, self.game.columns * CELL, self.game.rows * CELL)
+        cover     = pygame.Surface((grid_rect.width, grid_rect.height))
+        cover.fill(C["CARD_BG"])
+        self.screen.blit(cover, (grid_rect.x, grid_rect.y))
+        font = pygame.font.SysFont("Arial", 21, bold=True)
+        surf = font.render("Generating…", True, C["TEXT_SECONDARY"])
+        self.screen.blit(surf, (
+            grid_rect.x + (grid_rect.width  - surf.get_width())  // 2,
+            grid_rect.y + (grid_rect.height - surf.get_height()) // 2,
+        ))
+        pygame.display.flip()
+
     def restart(self):
+        self._draw_loading_canvas()
         self.game.reset(seed=self._restart_seed)
         self.game.paused      = False
         self.drag_start       = None
