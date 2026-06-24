@@ -192,6 +192,7 @@ def vs_init(grid_type, seed=None):
     _vs_human.reset(_seed)
     _vs_env = FruitBoxEnv(grid_type=grid_type)
     _vs_env.game.reset(_seed)
+    _vs_env.game.grid = _vs_human.grid.copy()
 
 def vs_human_grid():  return _vs_human.grid.flatten().tolist()
 def vs_ai_grid():     return _vs_env.game.grid.flatten().tolist()
