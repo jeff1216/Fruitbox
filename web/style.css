@@ -126,7 +126,8 @@ html, body {
 }
 
 .menu-title {
-  font-size: 48px; font-weight: 700; letter-spacing: -0.5px;
+  font-size: 48px; font-weight: 700; letter-spacing: -0.5px; text-align: center;
+  padding-bottom: 24px;
 }
 
 .menu-icons {

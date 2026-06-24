@@ -66,7 +66,7 @@ class FruitBoxVs:
         else:
             self.screen = screen
         _labels = {"solver": "Solver", "rl_model": "RL Model", "onnx": "ONNX"}
-        pygame.display.set_caption(f"Fruit Box — vs {_labels.get(opponent, opponent)}")
+        pygame.display.set_caption(f"ShroomBox — vs {_labels.get(opponent, opponent)}")
         self.clock = pygame.time.Clock()
 
         self.font_num     = pygame.font.SysFont("Arial", 20, bold=True)

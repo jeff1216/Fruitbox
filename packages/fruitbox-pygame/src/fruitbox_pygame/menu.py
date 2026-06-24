@@ -277,7 +277,7 @@ class FruitBoxMenu:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((MENU_W, MENU_H))
-        pygame.display.set_caption("Fruit Box")
+        pygame.display.set_caption("ShroomBox")
         self.clock       = pygame.time.Clock()
         self.font_title  = pygame.font.SysFont("Arial", 52, bold=True)
         self.font_hint   = pygame.font.SysFont("Arial", 12)
@@ -371,7 +371,7 @@ class FruitBoxMenu:
         self.screen.fill(C["BG"])
 
         # title
-        title = self.font_title.render("Fruit Box", True, C["TEXT_PRIMARY"])
+        title = self.font_title.render("ShroomBox", True, C["TEXT_PRIMARY"])
         self.screen.blit(title, ((MENU_W - title.get_width()) // 2, 100))
 
         # grid type selector

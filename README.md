@@ -1,4 +1,4 @@
-# Fruit Box
+# ShroomBox
 
 A puzzle game where you select groups of fruits whose numbers sum to 10 to clear them from the grid — race the clock to maximize your score.
 

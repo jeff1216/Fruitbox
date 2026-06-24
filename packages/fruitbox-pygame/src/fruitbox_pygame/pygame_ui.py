@@ -104,7 +104,7 @@ class FruitBoxPygame:
             self.screen = pygame.display.set_mode((self._win_w, self._win_h))
         else:
             self.screen = screen
-        pygame.display.set_caption("Fruit Box")
+        pygame.display.set_caption("ShroomBox")
         self.clock = pygame.time.Clock()
 
         self.font_num      = pygame.font.SysFont("Arial", 22, bold=True)

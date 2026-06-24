@@ -44,7 +44,7 @@ class FruitBoxAiWatch:
             self.screen = pygame.display.set_mode((WIN_W, WIN_H))
         else:
             self.screen = screen
-        pygame.display.set_caption("Fruit Box — Watch AI")
+        pygame.display.set_caption("ShroomBox — Watch AI")
         self.clock = pygame.time.Clock()
 
         self.font_num   = pygame.font.SysFont("Arial", 22, bold=True)
