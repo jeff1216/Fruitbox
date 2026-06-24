@@ -69,12 +69,12 @@ class FruitBoxVs:
         pygame.display.set_caption(f"Fruit Box — vs {_labels.get(opponent, opponent)}")
         self.clock = pygame.time.Clock()
 
-        self.font_num   = pygame.font.SysFont("Arial", 20, bold=True)
-        self.font_score = pygame.font.SysFont("Arial", 23, bold=True)
-        self.font_label = pygame.font.SysFont("Arial", 15)
-        self.font_over  = pygame.font.SysFont("Arial", 38, bold=True)
-        self.font_sub   = pygame.font.SysFont("Arial", 20)
-        self.font_btn   = pygame.font.SysFont("Arial", 13, bold=True)
+        self.font_num     = pygame.font.SysFont("Arial", 20, bold=True)
+        self.font_score   = pygame.font.SysFont("Arial", 23, bold=True)
+        self.font_label   = pygame.font.SysFont("Arial", 15)
+        self.font_over    = pygame.font.SysFont("Arial", 38, bold=True)
+        self.font_sub     = pygame.font.SysFont("Arial", 20)
+        self.font_btn     = pygame.font.SysFont("Arial", 13, bold=True)
 
         self.human_game = FruitBoxGame(grid_type=grid_type)
         self.ai_game    = FruitBoxGame(grid_type=grid_type)
@@ -139,7 +139,9 @@ class FruitBoxVs:
             manager=self.ui,
         )
 
+        self._ready = False
         self.reset()
+        self._ready = True
 
     def _create_model(self):
         raise NotImplementedError("subclass must implement _create_model() for model opponents")
@@ -343,7 +345,24 @@ class FruitBoxVs:
 
     # ── state ─────────────────────────────────────────────────────
 
+    def _draw_loading_canvas(self):
+        if not self._ready:
+            return
+        C    = fruitbox_colors.C
+        font = pygame.font.SysFont("Arial", 21, bold=True)
+        surf = font.render("Generating…", True, C["TEXT_SECONDARY"])
+        for board_x in (self._human_x(), self._ai_x()):
+            cover = pygame.Surface((BOARD_W, BOARD_H))
+            cover.fill(C["CARD_BG"])
+            self.screen.blit(cover, (board_x, HUD_H + PADDING))
+        self.screen.blit(surf, (
+            self._human_x() + (BOARD_W - surf.get_width())  // 2,
+            HUD_H + PADDING  + (BOARD_H - surf.get_height()) // 2,
+        ))
+        pygame.display.flip()
+
     def reset(self):
+        self._draw_loading_canvas()
         self.human_game.reset()
         self.human_game.paused = False
 
