@@ -198,6 +198,7 @@
         <button class="overlay-close" data-close="overlay-settings">×</button>
       </div>
       <div class="overlay-divider"></div>
+      <div class="setting-subhead">Keybinds</div>
       <div class="setting-row">
         <span class="setting-label">PAUSE</span>
         <button class="key-btn" id="key-btn-pause" data-binding="pause">SPACE</button>
@@ -211,6 +212,11 @@
         <button class="key-btn" id="key-btn-menu" data-binding="menu">ESC</button>
       </div>
       <div class="overlay-hint hidden" id="settings-capture-hint">Press any key to bind · ESC to cancel</div>
+      <div class="overlay-divider"></div>
+      <div class="setting-row">
+        <span class="setting-label">VS AI BOARD DEFAULT VISIBILITY</span>
+        <button class="key-btn" id="setting-vs-ai-board">HIDDEN</button>
+      </div>
     </div>
   </div>
 
@@ -260,12 +266,6 @@
         <p><strong>Random</strong> — randomly generated grid.</p>
         <p><strong>Solvable</strong> — grid is guaranteed to be fully clearable.</p>
         <p><strong>Custom</strong> — configure size, time limit, seed, and base type.</p>
-        <h3>Keyboard shortcuts</h3>
-        <div class="help-keys" id="help-keys">
-          <div><span class="key-tag" id="help-key-pause">Space</span> Pause / Resume</div>
-          <div><span class="key-tag" id="help-key-restart">R</span> Restart</div>
-          <div><span class="key-tag" id="help-key-menu">Esc</span> Menu</div>
-        </div>
       </div>
     </div>
   </div>
@@ -278,7 +278,7 @@
         <div class="overlay-title">Custom Mode</div>
         <button class="overlay-close" id="custom-close">×</button>
       </div>
-      <div class="overlay-note">Scores won't count towards best score</div>
+      <div class="overlay-note">Scores won't count towards highscore</div>
       <div class="overlay-divider"></div>
       <div class="setting-row">
         <span class="setting-label">GRID SIZE</span>
