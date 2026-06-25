@@ -104,8 +104,8 @@ const showScreen = id => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
 };
-const setGameUrl = (mode, seed) => {
-  const url = `${location.pathname}?seed=${seed}&mode=${mode}`;
+const setGameUrl = (mode, seed, gridType) => {
+  const url = `${location.pathname}?seed=${seed}&mode=${mode}&grid=${gridType}`;
   history.replaceState(null, '', url);
 };
 const clearGameUrl = () => history.replaceState(null, '', location.pathname);
@@ -522,7 +522,7 @@ async function startPlay(gridType, opts = {}) {
   $('play-pause-icon').src = './assets/pause.circle.png';
   $('play-canvas-wrap').classList.remove('board-paused');
   playGameSeed = py('play_seed');
-  setGameUrl('single', playGameSeed);
+  setGameUrl('single', playGameSeed, gridType);
   playGameStart = performance.now();
   dragStart = null; dragEnd = null;
 
@@ -686,7 +686,7 @@ async function startVs(gridType, seed = null, overlay = false) {
     $('vs-toggle-ai-board').title = 'Switch to AI board';
   }
   vsGameSeed  = py('vs_seed');
-  setGameUrl('vs', vsGameSeed);
+  setGameUrl('vs', vsGameSeed, gridType);
   vsGameStart = performance.now();
   dragStart = null; dragEnd = null;
   lastAiMoveTs = performance.now() + 800;
@@ -861,7 +861,7 @@ async function startWatch(gridType, seed = null, overlay = false) {
 
   py('watch_init', gridType, seed);
   watchGrid = py('watch_grid');
-  setGameUrl('demo', py('watch_seed'));
+  setGameUrl('demo', py('watch_seed'), gridType);
   watchScore = 0; watchTimeRemaining = DEFAULT_TIME; watchOver = false;
   watchGameStart = performance.now();
   lastWatchAiTs = performance.now() + 600;
@@ -1301,7 +1301,18 @@ async function init() {
 
   try {
     await initPyodide();
-    await showMenu();
+    const params   = new URLSearchParams(location.search);
+    const urlMode  = params.get('mode');
+    const urlSeed  = params.get('seed');
+    const urlGrid  = params.get('grid') || 'random';
+    const seed     = urlSeed !== null ? parseInt(urlSeed) : null;
+    if (urlMode === 'single' || urlMode === 'vs') {
+      await startPlay(urlGrid, { seed, isCustom: true });
+    } else if (urlMode === 'demo') {
+      await startWatch(urlGrid, seed);
+    } else {
+      await showMenu();
+    }
   } catch (e) {
     $('loading-status').textContent = 'Failed to load: ' + e.message;
     console.error(e);
