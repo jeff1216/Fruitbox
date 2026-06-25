@@ -11,8 +11,8 @@
   --card-border:  #41403b;
   --text:         #dcdad4;
   --text-dim:     #82807a;
-  --accent:       #5096e6;
-  --accent-dim:   #14305a;
+  --accent:       #e07832;
+  --accent-dim:   #3a1e08;
   --btn-bg:       #37362f;
   --btn-border:   #504f48;
   --sel-fill:     rgba(80,150,230,0.23);
@@ -43,8 +43,8 @@
   --card-border:  #d0cfc8;
   --text:         #1c1b18;
   --text-dim:     #6e6c65;
-  --accent:       #1865be;
-  --accent-dim:   #d4e3f7;
+  --accent:       #c05c18;
+  --accent-dim:   #fef0e0;
   --btn-bg:       #e2e1db;
   --btn-border:   #c5c4bc;
   --sel-fill:     rgba(24,101,190,0.15);
@@ -157,8 +157,8 @@ html, body {
 .hud-right .icon-img { width: 24px; height: 24px; } /* same as base, kept for specificity */
 
 /* Gear in pill uses accent color */
-.pill-gear-icon { width: 20px; height: 20px; filter: invert(0.55) sepia(1) saturate(4) hue-rotate(185deg) brightness(1.2); }
-[data-theme="light"] .pill-gear-icon { filter: invert(0.1) sepia(1) saturate(6) hue-rotate(185deg) brightness(0.8); }
+.pill-gear-icon { width: 20px; height: 20px; filter: invert(0.55) sepia(1) saturate(5) hue-rotate(10deg) brightness(1.2); }
+[data-theme="light"] .pill-gear-icon { filter: invert(0.1) sepia(1) saturate(8) hue-rotate(10deg) brightness(0.75); }
 
 /* ── Pill selector ──────────────────────────────────────────────────────────── */
 .pill-selector {
