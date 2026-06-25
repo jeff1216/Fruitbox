@@ -104,6 +104,11 @@ const showScreen = id => {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
 };
+const setGameUrl = (mode, seed) => {
+  const url = `${location.pathname}?seed=${seed}&mode=${mode}`;
+  history.replaceState(null, '', url);
+};
+const clearGameUrl = () => history.replaceState(null, '', location.pathname);
 const setProgress = (pct, msg) => {
   $('progress-fill').style.width = pct + '%';
   $('loading-status').textContent = msg;
@@ -517,6 +522,7 @@ async function startPlay(gridType, opts = {}) {
   $('play-pause-icon').src = './assets/pause.circle.png';
   $('play-canvas-wrap').classList.remove('board-paused');
   playGameSeed = py('play_seed');
+  setGameUrl('single', playGameSeed);
   playGameStart = performance.now();
   dragStart = null; dragEnd = null;
 
@@ -680,6 +686,7 @@ async function startVs(gridType, seed = null, overlay = false) {
     $('vs-toggle-ai-board').title = 'Switch to AI board';
   }
   vsGameSeed  = py('vs_seed');
+  setGameUrl('vs', vsGameSeed);
   vsGameStart = performance.now();
   dragStart = null; dragEnd = null;
   lastAiMoveTs = performance.now() + 800;
@@ -854,6 +861,7 @@ async function startWatch(gridType, seed = null, overlay = false) {
 
   py('watch_init', gridType, seed);
   watchGrid = py('watch_grid');
+  setGameUrl('demo', py('watch_seed'));
   watchScore = 0; watchTimeRemaining = DEFAULT_TIME; watchOver = false;
   watchGameStart = performance.now();
   lastWatchAiTs = performance.now() + 600;
@@ -1221,6 +1229,7 @@ function setupMenuInput() {
 async function showMenu() {
   dragStart = null; dragEnd = null;
   closeAllOverlays();
+  clearGameUrl();
   showScreen('screen-menu');
   updatePill();
 }
