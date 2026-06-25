@@ -2,12 +2,12 @@
 
 A puzzle game where you select groups of fruits whose numbers sum to 10 to clear them from the grid — race the clock to maximize your score.
 
-**Play in browser:** https://jeff1216.github.io/Fruitbox
+**Play in browser:** https://jeff1216.github.io/ShroomBox
 
 ## Download
 
-- **[fruitbox.exe](https://github.com/jeff1216/Fruitbox/releases/latest/download/fruitbox.exe)** — ONNX inference (recommended)
-- **[fruitbox-pytorch.exe](https://github.com/jeff1216/Fruitbox/releases/latest/download/fruitbox-pytorch.exe)** — PyTorch / SB3 inference
+- **[ShroomBox.exe](https://github.com/jeff1216/ShroomBox/releases/latest/download/ShroomBox.exe)** — ONNX inference (recommended)
+- **[ShroomBox-pytorch.exe](https://github.com/jeff1216/ShroomBox/releases/latest/download/ShroomBox-pytorch.exe)** — PyTorch / SB3 inference
 
 Windows only. No installation required — just run the executable.
 
@@ -63,4 +63,4 @@ uv run fruitbox-pytorch              # PyTorch / SB3 desktop app
 uv run fruitbox-train --watch        # train with live preview
 ```
 
-Windows executables are built in CI via PyInstaller (`fruitbox.exe` and `fruitbox-pytorch.exe`). The ONNX model is bundled from [Hugging Face](https://huggingface.co/Fungster/fruitbox-ppo/blob/main/fruitbox_policy.onnx).
+Windows executables are built in CI via PyInstaller (`ShroomBox.exe` and `ShroomBox-pytorch.exe`). The ONNX model is bundled from [Hugging Face](https://huggingface.co/Fungster/fruitbox-ppo/blob/main/fruitbox_policy.onnx).
