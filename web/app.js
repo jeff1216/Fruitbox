@@ -633,6 +633,7 @@ function setupPlayInput() {
       const bounds = selBounds(dragStart, dragEnd);
       if (bounds) {
         const [pts, noMoves] = py('play_apply', ...bounds);
+        if (pts) { playScore = py('play_score'); playGrid = py('play_grid'); }
         if (noMoves) { dragStart = null; dragEnd = null; endPlay('No more moves'); return; }
       }
     }
@@ -659,7 +660,8 @@ function setupPlayInput() {
     if (!playGameOver) {
       const bounds = selBounds(dragStart, dragEnd);
       if (bounds) {
-        const [, noMoves] = py('play_apply', ...bounds);
+        const [pts, noMoves] = py('play_apply', ...bounds);
+        if (pts) { playScore = py('play_score'); playGrid = py('play_grid'); }
         if (noMoves) { dragStart = null; dragEnd = null; endPlay('No more moves'); return; }
       }
     }
